@@ -5,7 +5,7 @@ DKT는 `Deep Knowledge Tracing`의 약자로 우리의 "지식 상태"를 추적
 
 FeedGate팀은 Iscream 데이터셋을 이용하여 DKT모델을 구축할 예정입니다. 학생 개개인이 푼 문제 리스트와 정답 여부가 담긴 데이터를 바탕으로 이후에 제시된 문제를 맞출지 틀릴지를 예측하는 것을 목표로 삼고 있습니다.
 
-![test](https://user-images.githubusercontent.com/46434838/119333156-82dc0000-bcc4-11eb-8074-3c4833ef308c.png))
+![test](https://user-images.githubusercontent.com/46434838/119333156-82dc0000-bcc4-11eb-8074-3c4833ef308c.png)
 
 
 # File Structure
