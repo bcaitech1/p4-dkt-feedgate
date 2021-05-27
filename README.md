@@ -44,4 +44,37 @@ input/
         ├── sample_submission.csv
         ├── test_data.csv
         └── train_data.csv
+        
 ```
+
+## | Config
+
+### Train / Inference
+#### - train.py
+config 파일 위치 (default : ./config/config.yml)
+
+`
+python train.py --config_path {file_dir/file_name.yml}
+`
+
+##### model (default : lstm)
+
+`
+python train.py --config {root}
+`
+
+
+#### - inference.py
+##### config 파일 위치 (default : ./config/config.yml)
+
+`
+python inference.py --config_path {file_dir/file_name.yml}
+`
+
+##### model (default : lstm)
+
+`
+python inference.py --config {root}
+
+##### > [More details](https://github.com/bcaitech1/p4-dkt-feedgate/tree/master/config)
+`
