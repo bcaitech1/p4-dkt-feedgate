@@ -8,7 +8,7 @@ from .optimizer import get_optimizer
 from .scheduler import get_scheduler
 from .criterion import get_criterion
 from .metric import get_metric
-from .model import LSTM
+from .model import *
 
 import wandb
 
@@ -46,7 +46,7 @@ def run(args, train_data, valid_data):
                 'epoch': epoch + 1,
                 'state_dict': model_to_save.state_dict(),
                 },
-                args.model_dir, 'model.pt',
+                args.model_dir, f'{args.name}.pt',
             )
             early_stopping_counter = 0
         else:
@@ -90,7 +90,6 @@ def train(train_loader, model, optimizer, args):
         else: # cpu
             preds = preds.detach().numpy()
             targets = targets.detach().numpy()
-        
         total_preds.append(preds)
         total_targets.append(targets)
         losses.append(loss)
@@ -186,11 +185,8 @@ def get_model(args):
     """
     Load model and move tensors to a given devices.
     """
-    if args.model == 'lstm': model = LSTM(args)
-    if args.model == 'lstmattn': model = LSTMATTN(args)
-    if args.model == 'bert': model = Bert(args)
-    
-
+    model_class = str_to_class(args.model)
+    model = model_class(args)
     model.to(args.device)
 
     return model
