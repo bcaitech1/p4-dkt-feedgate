@@ -25,10 +25,6 @@ code/
 ├── config/
 │   ├── config.py
 │   └── cofing.yml
-├── asset/
-│   ├── assessmentItemID_classes.npy
-│   ├── KnowledgeTag_classes.npy
-│   └── testId_classes.nmp
 ├── .gitignore
 ├── args.py
 ├── baseline.ipynb
