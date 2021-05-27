@@ -75,6 +75,7 @@ python inference.py --config_path {file_dir/file_name.yml}
 
 `
 python inference.py --config {root}
+`
 
 ##### > [More details](https://github.com/bcaitech1/p4-dkt-feedgate/tree/master/config)
-`
+
