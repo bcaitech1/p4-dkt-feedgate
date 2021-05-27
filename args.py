@@ -45,6 +45,13 @@ def parse_args(mode='train'):
     parser.add_argument('--model', default='lstm', type=str, help='model type')
     parser.add_argument('--optimizer', default='adam', type=str, help='optimizer type')
     parser.add_argument('--scheduler', default='plateau', type=str, help='scheduler type')
+
+    ### wandb & pt file name
+    parser.add_argument('--name', default='model', type=str, help='file & run name')
+    
+    ### config ####
+    parser.add_argument('--config_path', default='./config/config.yml', type=str, help='file & run name')
+    parser.add_argument('--config', default='lstm', type=str, help='select config')
     
     args = parser.parse_args()
 
