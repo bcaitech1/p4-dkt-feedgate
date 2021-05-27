@@ -1,13 +1,39 @@
+# Config
+
+## | Train / Inference
+### - train.py
+config 파일 위치 (default : ./config/config.yml)
+
 `
-python train.py --
+python train.py --config_path {file_dir/file_name.yml}
 `
+
+#### model (default : lstm)
+
 `
 python train.py --config {model class}
 `
-#### config.yml
-##### ex) lstm
+### - inference.py
+#### config 파일 위치 (default : ./config/config.yml)
+
+`
+python inference.py --config_path {file_dir/file_name.yml}
+`
+
+#### model (default : lstm)
+
+`
+python inference.py --config {root}
+`
+
+
+## | Config.yml
+- model_dir: model이 저장되는 directory
+- model_name: model 저장명
+- model: 'LSTM' load할 model class
+### ex) LSTM
 ```
-lstm:
+lstm: # root
   seed: 42
   device: 'cpu'
   data_dir: '/opt/ml/input/data/train_dataset'
