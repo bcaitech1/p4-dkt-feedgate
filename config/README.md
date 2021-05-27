@@ -1,0 +1,39 @@
+`
+python train.py --
+`
+`
+python train.py --config {model class}
+`
+#### config.yml
+##### ex) lstm
+```
+lstm:
+  seed: 42
+  device: 'cpu'
+  data_dir: '/opt/ml/input/data/train_dataset'
+  asset_dir: 'asset/'
+  file_name: 'train_data.csv'
+  model_dir: 'models/' # model directory
+  model_name: 'lstm.pt' # save model as model_name
+  output_dir: 'output/'
+  test_file_name: 'test_data.csv'  
+  max_seq_len: 20
+  num_workers: 1
+  model_args:
+    model: 'LSTM' # model class name
+    hidden_dim: 64
+    n_layers: 2
+    n_heads: 2
+    drop_out: 0.2
+  train_args:
+    n_epochs: 20
+    batch_size: 64
+    lr: 0.0001
+    clip_grad: 10
+    patience: 5
+    log_steps: 50
+    optimizer: 'adam'
+    scheduler: 'plateau'
+  wandb:
+    name: 'lstm' # wandb run name
+```
