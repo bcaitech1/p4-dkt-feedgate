@@ -13,7 +13,7 @@ FeedGate팀은 Iscream 데이터셋을 이용하여 DKT모델을 구축할 예�
 ```
 code/
 │
-├── dkt
+├── dkt/
 │   ├── criterion.py
 │   ├── dataloader.py
 │   ├── metric.py
@@ -22,6 +22,13 @@ code/
 │   ├── scheduler.py
 │   ├── trainer.py
 │   └── utils.py
+├── config/
+│   ├── config.py
+│   └── cofing.yml
+├── asset/
+│   ├── assessmentItemID_classes.npy
+│   ├── KnowledgeTag_classes.npy
+│   └── testId_classes.nmp
 ├── .gitignore
 ├── args.py
 ├── baseline.ipynb
