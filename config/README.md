@@ -11,7 +11,7 @@ python train.py --config_path {file_dir/file_name.yml}
 #### model (default : lstm)
 
 `
-python train.py --config {model class}
+python train.py --config {root}
 `
 ### - inference.py
 #### config 파일 위치 (default : ./config/config.yml)
