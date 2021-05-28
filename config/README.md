@@ -30,7 +30,7 @@ python inference.py --config {root}
 ## | Config.yml
 - model_dir: model이 저장되는 directory
 - model_name: model 저장명
-- model: 'LSTM' load할 model class
+- model: load할 model class
 ### ex) LSTM
 ```
 lstm: # root
