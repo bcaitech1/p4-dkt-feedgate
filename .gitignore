@@ -5,6 +5,7 @@ models
 wandb
 output
 asset
+.vscode
 
 *.md
 *.pt
