@@ -10,7 +10,8 @@ import types
 try:
     from transformers.modeling_bert import BertConfig, BertEncoder, BertModel    
 except:
-    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel    
+    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel
+
 
 
 def str_to_class(field):
@@ -37,10 +38,21 @@ class LSTM(nn.Module):
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
+        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//3)
+        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//3)
         self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
+        # self.embedding_hour = nn.Embedding(self.args.n_hour + 1, self.hidden_dim//3)
+        # self.embedding_weekday = nn.Embedding(self.args.n_weekday + 1, self.hidden_dim//3)
+        # self.embedding_average_user_correct = nn.Embedding(self.args.n_average_user_correct + 1, self.hidden_dim//3)
+        # self.embedding_average_tag_correct = nn.Embedding(self.args.n_average_tag_correct + 1, self.hidden_dim//3)
+        # self.embedding_average_prob_correct = nn.Embedding(self.args.n_average_prob_correct + 1, self.hidden_dim//3)
+        # self.embedding_past_prob_count = nn.Embedding(self.args.n_past_prob_count + 1, self.hidden_dim//3)
+        self.embedding_past_user_content_count = nn.Embedding(self.args.n_past_user_content_count + 1, self.hidden_dim//3)
+        
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
+        # self.comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//3)*5, self.hidden_dim)
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -69,7 +81,17 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, _, mask, interaction, _ = input
+        # test, question, tag, _, mask, interaction, _ = input
+        # test, question, tag, _, hour, mask, interaction, _ = input
+        # test, question, tag, _, hour, weekday, mask, interaction, _ = input
+        # test, question, tag, _, average_correct, mask, interaction, _ = input
+        # test, question, tag, _, average_tag_correct, mask, interaction, _ = input
+        # test, question, tag, _, average_prob_correct, mask, interaction, _ = input
+        # test, question, tag, _, past_prob_count, mask, interaction, _ = input
+        test, question, tag, _, past_user_content_count, mask, interaction, _ = input
+        # test, category, number, tag, _, mask, interaction, _ = input
+        # test, category, number, tag, _, average_user_correct, mask, interaction, _ = input
+        # test, category, number, tag, _, average_prob_correct, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
 
@@ -78,13 +100,75 @@ class LSTM(nn.Module):
         embed_interaction = self.embedding_interaction(interaction)
         embed_test = self.embedding_test(test)
         embed_question = self.embedding_question(question)
+        # embed_category = self.embedding_category(category)
+        # embed_number = self.embedding_number(number)
         embed_tag = self.embedding_tag(tag)
+        # embed_hour = self.embedding_hour(hour)
+        # embed_weekday = self.embedding_weekday(weekday)
+        # embed_average_user_correct = self.embedding_average_user_correct(average_user_correct)
+        # embed_average_tag_correct = self.embedding_average_tag_correct(average_tag_correct)
+        # embed_average_prob_correct = self.embedding_average_prob_correct(average_prob_correct)
+        # embed_past_prob_count = self.embedding_past_prob_count(past_prob_count)
+        embed_past_user_content_count = self.embedding_past_user_content_count(past_user_content_count)
         
-
+        
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_hour], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_hour,
+        #                    embed_weekday], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_average_correct], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_average_tag_correct], 2)  
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_average_prob_correct], 2)  
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_question,
+        #                    embed_tag,
+        #                    embed_past_prob_count], 2)
         embed = torch.cat([embed_interaction,
                            embed_test,
                            embed_question,
-                           embed_tag,], 2)
+                           embed_tag,
+                           embed_past_user_content_count], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_category,
+        #                    embed_number,
+        #                    embed_tag], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_category,
+        #                    embed_number,
+        #                    embed_tag,
+        #                    embed_average_user_correct], 2)
+        # embed = torch.cat([embed_interaction,
+        #                    embed_test,
+        #                    embed_category,
+        #                    embed_number,
+        #                    embed_tag,
+        #                    embed_average_prob_correct], 2)
 
         X = self.comb_proj(embed)
 
@@ -96,7 +180,6 @@ class LSTM(nn.Module):
         preds = self.activation(out).view(batch_size, -1)
 
         return preds
-
 
 
 class LSTMATTN(nn.Module):
@@ -209,7 +292,7 @@ class Bert(nn.Module):
         self.n_layers = self.args.n_layers
 
         # Embedding 
-        # interaction은 현재 correct으로 구성되어있다. correct(1, 2) + padding(0)
+        # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
@@ -241,7 +324,7 @@ class Bert(nn.Module):
         test, question, tag, _, mask, interaction, _ = input
         batch_size = interaction.size(0)
 
-        # 신나는 embedding
+        # �떊�굹�뒗 embedding
         
         embed_interaction = self.embedding_interaction(interaction)
         embed_test = self.embedding_test(test)

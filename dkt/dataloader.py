@@ -40,7 +40,17 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train = True):
-        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'hour']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'hour', 'weekday']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'average_correct']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'average_tag_correct']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'average_prob_correct']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'past_prob_count']
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'past_user_content_count']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number', 'average_user_correct']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number', 'average_prob_correct']
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
@@ -90,17 +100,46 @@ class Preprocess:
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
+        # self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
+        # self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
+        # self.args.n_hour = len(np.load(os.path.join(self.args.asset_dir,'hour_classes.npy')))
+        # self.args.n_weekday = len(np.load(os.path.join(self.args.asset_dir,'weekday_classes.npy')))
+        # self.args.n_average_user_correct = len(np.load(os.path.join(self.args.asset_dir,'average_user_correct_classes.npy')))
+        # self.args.n_average_tag_correct = len(np.load(os.path.join(self.args.asset_dir,'average_tag_correct_classes.npy')))
+        # self.args.n_average_prob_correct = len(np.load(os.path.join(self.args.asset_dir,'average_prob_correct_classes.npy')))
+        # self.args.n_past_prob_count = len(np.load(os.path.join(self.args.asset_dir,'past_prob_count_classes.npy')))
+        self.args.n_past_user_content_count = len(np.load(os.path.join(self.args.asset_dir,'past_user_content_count_classes.npy')))
         
 
 
         df = df.sort_values(by=['userID','Timestamp'], axis=0)
-        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'hour']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'hour', 'weekday']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'average_correct']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'average_tag_correct']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'average_prob_correct']
+        # columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'past_prob_count']
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag', 'past_user_content_count']
+        # columns = ['userID', 'Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag']
+        # columns = ['userID', 'Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'average_user_correct']
+        # columns = ['userID', 'Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'average_prob_correct']
+
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
                     r['assessmentItemID'].values,
+                    # r['Category'].values, 
+                    # r['Number'].values, 
                     r['KnowledgeTag'].values,
-                    r['answerCode'].values
+                    r['answerCode'].values,
+                    # r['hour'].values,
+                    # r['weekday'].values,
+                    # r['average_user_correct'].values,
+                    # r['average_tag_correct'].values,
+                    # r['average_prob_correct'].values,
+                    # r['past_prob_count'].values,
+                    r['past_user_content_count'].values,
                 )
             )
 
@@ -124,10 +163,30 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, question, tag, correct = row[0], row[1], row[2], row[3]
+        # test, question, tag, correct = row[0], row[1], row[2], row[3]
+        # test, question, tag, correct, hour = row[0], row[1], row[2], row[3], row[4]
+        # test, question, tag, correct, hour, weekday = row[0], row[1], row[2], row[3], row[4], row[5]
+        # test, question, tag, correct, average_correct = row[0], row[1], row[2], row[3], row[4]
+        # test, question, tag, correct, average_tag_correct = row[0], row[1], row[2], row[3], row[4]
+        # test, question, tag, correct, average_prob_correct = row[0], row[1], row[2], row[3], row[4]
+        # test, question, tag, correct, past_prob_count = row[0], row[1], row[2], row[3], row[4]
+        test, question, tag, correct, past_user_content_count = row[0], row[1], row[2], row[3], row[4]
+        # test, category, number, tag, correct = row[0], row[1], row[2], row[3], row[4]
+        # test, category, number, tag, correct, average_user_correct = row[0], row[1], row[2], row[3], row[4], row[5]
+        # test, category, number, tag, correct, average_prob_correct = row[0], row[1], row[2], row[3], row[4], row[5]
         
 
-        cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, question, tag, correct, hour]
+        # cate_cols = [test, question, tag, correct, hour, weekday]
+        # cate_cols = [test, question, tag, correct, average_correct]
+        # cate_cols = [test, question, tag, correct, average_tag_correct]
+        # cate_cols = [test, question, tag, correct, average_prob_correct]
+        # cate_cols = [test, question, tag, correct, past_prob_count]
+        cate_cols = [test, question, tag, correct, past_user_content_count]
+        # cate_cols = [test, category, number, tag, correct]
+        # cate_cols = [test, category, number, tag, correct, average_user_correct]
+        # cate_cols = [test, category, number, tag, correct, average_prob_correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
         if seq_len > self.args.max_seq_len:

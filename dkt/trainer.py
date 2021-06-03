@@ -1,4 +1,5 @@
 import os
+from numpy.lib.function_base import diff
 import torch
 import numpy as np
 
@@ -72,6 +73,7 @@ def train(train_loader, model, optimizer, args):
         input = process_batch(batch, args)
         preds = model(input)
         targets = input[3] # correct
+        # targets = input[4]
 
 
         loss = compute_loss(preds, targets)
@@ -115,6 +117,7 @@ def validate(valid_loader, model, args):
 
         preds = model(input)
         targets = input[3] # correct
+        # targets = input[4]
 
 
         # predictions
@@ -195,7 +198,17 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, question, tag, correct, mask = batch
+    # test, question, tag, correct, mask = batch
+    # test, question, tag, correct, hour, mask = batch
+    # test, question, tag, correct, hour, weekday, mask = batch
+    # test, question, tag, correct, average_correct, mask = batch
+    # test, question, tag, correct, average_tag_correct, mask = batch
+    # test, question, tag, correct, average_prob_correct, mask = batch
+    # test, question, tag, correct, past_prob_count, mask = batch
+    test, question, tag, correct, past_user_content_count, mask = batch
+    # test, category, number, tag, correct, mask = batch
+    # test, category, number, tag, correct, average_user_correct, mask = batch
+    # test, category, number, tag, correct, average_prob_correct, mask = batch
     
     
     # change to float
@@ -210,10 +223,22 @@ def process_batch(batch, args):
     interaction = (interaction * mask).to(torch.int64)
     # print(interaction)
     # exit()
+
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
+    # category = ((category + 1) * mask).to(torch.int64)
+    # number = ((number+ 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
+
+    # hour = ((hour + 1) * mask).to(torch.int64)
+    # weekday = ((weekday+ 1) * mask).to(torch.int64)
+    # average_user_correct = ((average_user_correct + 1) * mask).to(torch.int64)
+    # average_tag_correct = ((average_tag_correct + 1) * mask).to(torch.int64)
+    # average_prob_correct = ((average_prob_correct + 1) * mask).to(torch.int64)
+    # past_prob_count = ((past_prob_count + 1) * mask).to(torch.int64)
+    past_user_content_count = ((past_user_content_count + 1) * mask).to(torch.int64)
+    
 
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -225,18 +250,55 @@ def process_batch(batch, args):
 
     test = test.to(args.device)
     question = question.to(args.device)
-
-
+    # category = category.to(args.device)
+    # number = number.to(args.device)
     tag = tag.to(args.device)
     correct = correct.to(args.device)
+    # hour = hour.to(args.device)
+    # weekday = weekday.to(args.device)
+    # average_user_correct = average_user_correct.to(args.device)
+    # average_tag_correct = average_tag_correct.to(args.device)
+    # average_prob_correct = average_prob_correct.to(args.device)
+    # past_prob_count = past_prob_count.to(args.device)
+    past_user_content_count = past_user_content_count.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
+    # return (test, question,
+    #         tag, correct, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, hour, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, hour, weekday, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, average_correct, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, average_tag_correct, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, average_prob_correct, mask,
+    #         interaction, gather_index)
+    # return (test, question,
+    #         tag, correct, past_prob_count, mask,
+    #         interaction, gather_index)
     return (test, question,
-            tag, correct, mask,
+            tag, correct, past_user_content_count, mask,
             interaction, gather_index)
+    # return (test, category, number,
+    #         tag, correct, mask,
+    #         interaction, gather_index)
+    # return (test, category, number,
+    #         tag, correct, average_user_correct, mask,
+    #         interaction, gather_index)
+    # return (test, category, number,
+    #         tag, correct, average_prob_correct, mask,
+    #         interaction, gather_index)
 
 
 # loss계산하고 parameter update!
