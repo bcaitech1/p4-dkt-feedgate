@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 
-
 from .dataloader import get_loaders
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
@@ -71,7 +70,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[4] # correct
+        targets = input[-1] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -114,7 +113,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[4] # correct
+        targets = input[-1] # correct
 
 
         # predictions
@@ -195,7 +194,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, difficulty, number, tag, correct, mask = batch
+    test, category, number, tag, soltime, time, sol_num, correct, mask = batch
     
     
     # change to float
@@ -213,9 +212,12 @@ def process_batch(batch, args):
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
     # question = ((question + 1) * mask).to(torch.int64)
-    difficulty = ((difficulty + 1) * mask).to(torch.int64)
+    category = ((category + 1) * mask).to(torch.int64)
     number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
+    soltime = ((soltime + 1) * mask).to(torch.int64)
+    time = ((time + 1) * mask).to(torch.int64)
+    sol_num = ((sol_num + 1) * mask).to(torch.int64)
 
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -227,19 +229,25 @@ def process_batch(batch, args):
 
     test = test.to(args.device)
     # question = question.to(args.device)
-    difficulty = difficulty.to(args.device)
+    category = category.to(args.device)
     number = number.to(args.device)
 
 
     tag = tag.to(args.device)
+    soltime = soltime.to(args.device)
+    time = time.to(args.device)
+    sol_num = sol_num.to(args.device)
+
     correct = correct.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, difficulty, number,
-            tag, correct, mask,
+    return (test, category, number,
+            tag, soltime, time,
+            sol_num,
+            correct, mask,
             interaction, gather_index)
 
 
@@ -249,7 +257,6 @@ def compute_loss(preds, targets):
     Args :
         preds   : (batch_size, max_seq_len)
         targets : (batch_size, max_seq_len)
-
     """
     loss = get_criterion(preds, targets)
     #마지막 시퀀드에 대한 값만 loss 계산

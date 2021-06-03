@@ -3,11 +3,11 @@ lstm:
   device: 'cpu'
   data_dir: '/opt/ml/input/data/train_dataset'
   asset_dir: 'asset/'
-  file_name: 'train_data.csv'
+  file_name: 'tuning_train_data.csv'
   model_dir: 'models/' # model directory
   model_name: 'lstm.pt' # save model as model_name
   output_dir: 'output/'
-  test_file_name: 'test_data.csv'  
+  test_file_name: 'tuning_test_data.csv'  
   max_seq_len: 20
   num_workers: 1
   model_args:
@@ -23,7 +23,7 @@ lstm:
     clip_grad: 10
     patience: 5
     log_steps: 50
-    optimizer: 'adam'
+    optimizer: 'adamW'
     scheduler: 'plateau'
   wandb:
     name: 'lstm' # wandb run name
@@ -33,11 +33,11 @@ lstmattn:
   device: 'cpu'
   data_dir: '/opt/ml/input/data/train_dataset'
   asset_dir: 'asset/'
-  file_name: 'train_data.csv'
+  file_name: 'tuning_train_data.csv'
   model_dir: 'models/' # model directory
   model_name: 'lstmattn.pt' # save model as model_name
   output_dir: 'output/'
-  test_file_name: 'test_data.csv'  
+  test_file_name: 'tuning_test_data.csv'  
   max_seq_len: 20
   num_workers: 1
   model_args:
@@ -53,7 +53,7 @@ lstmattn:
     clip_grad: 10
     patience: 5
     log_steps: 50
-    optimizer: 'adam'
+    optimizer: 'adamW'
     scheduler: 'plateau'
   wandb:
     name: 'lstmattn' # wandb run name
