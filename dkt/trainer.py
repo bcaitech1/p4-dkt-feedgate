@@ -20,6 +20,7 @@ def run(args, train_data, valid_data):
     args.warmup_steps = args.total_steps // 10
             
     model = get_model(args)
+    print(model)
     optimizer = get_optimizer(model, args)
     scheduler = get_scheduler(optimizer, args)
 
@@ -71,7 +72,9 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[-1] # correct
+        targets = input[4] # correct
+        print(preds)
+        print(targets)
 
 
         loss = compute_loss(preds, targets)
@@ -114,7 +117,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[-1] # correct
+        targets = input[4] # correct
 
 
         # predictions

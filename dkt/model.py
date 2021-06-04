@@ -47,7 +47,8 @@ class LSTM(nn.Module):
         # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//3)*8, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//3)*5, self.hidden_dim)
+        # self.comb_proj = nn.Linear((self.hidden_dim//3)*8, self.hidden_dim)
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
