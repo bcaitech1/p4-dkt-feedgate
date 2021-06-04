@@ -3,7 +3,6 @@ from numpy.lib.function_base import diff
 import torch
 import numpy as np
 
-
 from .dataloader import get_loaders
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
@@ -72,8 +71,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[3] # correct
-        # targets = input[4]
+        targets = input[-1] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -116,8 +114,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[3] # correct
-        # targets = input[4]
+        targets = input[-1] # correct
 
 
         # predictions
@@ -198,17 +195,8 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    # test, question, tag, correct, mask = batch
-    # test, question, tag, correct, hour, mask = batch
-    # test, question, tag, correct, hour, weekday, mask = batch
-    # test, question, tag, correct, average_correct, mask = batch
-    # test, question, tag, correct, average_tag_correct, mask = batch
-    # test, question, tag, correct, average_prob_correct, mask = batch
-    # test, question, tag, correct, past_prob_count, mask = batch
-    test, question, tag, correct, past_user_content_count, mask = batch
-    # test, category, number, tag, correct, mask = batch
-    # test, category, number, tag, correct, average_user_correct, mask = batch
-    # test, category, number, tag, correct, average_prob_correct, mask = batch
+    test, category, number, tag, correct, mask = batch
+    # test, category, number, tag, soltime, time, sol_num, correct, mask = batch
     
     
     # change to float
@@ -226,10 +214,13 @@ def process_batch(batch, args):
 
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
-    question = ((question + 1) * mask).to(torch.int64)
-    # category = ((category + 1) * mask).to(torch.int64)
-    # number = ((number+ 1) * mask).to(torch.int64)
+    # question = ((question + 1) * mask).to(torch.int64)
+    category = ((category + 1) * mask).to(torch.int64)
+    number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
+    # soltime = ((soltime + 1) * mask).to(torch.int64)
+    # time = ((time + 1) * mask).to(torch.int64)
+    # sol_num = ((sol_num + 1) * mask).to(torch.int64)
 
     # hour = ((hour + 1) * mask).to(torch.int64)
     # weekday = ((weekday+ 1) * mask).to(torch.int64)
@@ -237,7 +228,7 @@ def process_batch(batch, args):
     # average_tag_correct = ((average_tag_correct + 1) * mask).to(torch.int64)
     # average_prob_correct = ((average_prob_correct + 1) * mask).to(torch.int64)
     # past_prob_count = ((past_prob_count + 1) * mask).to(torch.int64)
-    past_user_content_count = ((past_user_content_count + 1) * mask).to(torch.int64)
+    # past_user_content_count = ((past_user_content_count + 1) * mask).to(torch.int64)
     
 
     # gather index
@@ -249,10 +240,16 @@ def process_batch(batch, args):
     # device memory로 이동
 
     test = test.to(args.device)
-    question = question.to(args.device)
-    # category = category.to(args.device)
-    # number = number.to(args.device)
+    # question = question.to(args.device)
+    category = category.to(args.device)
+    number = number.to(args.device)
+
+
     tag = tag.to(args.device)
+    # soltime = soltime.to(args.device)
+    # time = time.to(args.device)
+    # sol_num = sol_num.to(args.device)
+
     correct = correct.to(args.device)
     # hour = hour.to(args.device)
     # weekday = weekday.to(args.device)
@@ -260,36 +257,20 @@ def process_batch(batch, args):
     # average_tag_correct = average_tag_correct.to(args.device)
     # average_prob_correct = average_prob_correct.to(args.device)
     # past_prob_count = past_prob_count.to(args.device)
-    past_user_content_count = past_user_content_count.to(args.device)
+    # past_user_content_count = past_user_content_count.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    # return (test, question,
-    #         tag, correct, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, hour, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, hour, weekday, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, average_correct, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, average_tag_correct, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, average_prob_correct, mask,
-    #         interaction, gather_index)
-    # return (test, question,
-    #         tag, correct, past_prob_count, mask,
-    #         interaction, gather_index)
-    return (test, question,
-            tag, correct, past_user_content_count, mask,
+    return (test, category, number,
+            tag, correct, mask,
             interaction, gather_index)
+    # return (test, category, number,
+    #         tag, soltime, time,
+    #         sol_num,
+    #         correct, mask,
+    #         interaction, gather_index)
     # return (test, category, number,
     #         tag, correct, mask,
     #         interaction, gather_index)
@@ -307,7 +288,6 @@ def compute_loss(preds, targets):
     Args :
         preds   : (batch_size, max_seq_len)
         targets : (batch_size, max_seq_len)
-
     """
     loss = get_criterion(preds, targets)
     #마지막 시퀀드에 대한 값만 loss 계산

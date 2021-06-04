@@ -8,3 +8,4 @@ easydict
 prettyprinter 
 importlib 
 pyyaml
+adamp
