@@ -40,7 +40,7 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train = True):
-        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number']
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
@@ -66,16 +66,30 @@ class Preprocess:
             df[col] = test
             
 
-        def convert_time(s):
-            timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-            return int(timestamp)
+        # def convert_time(s):
+        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
+        #     return int(timestamp)
 
-        df['Timestamp'] = df['Timestamp'].apply(convert_time)
+        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
         
         return df
 
     def __feature_engineering(self, df):
         #TODO
+        # category = df['assessmentItemID'].apply(lambda x: x[2])
+        # number = df['assessmentItemID'].apply(lambda x: x[0]+x[-6:])
+
+        # df['Category'] = category
+        # df['Number'] = number
+    
+        # def convert_time(s):
+        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
+        #     return int(timestamp)
+
+        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
+        # df = df.sort_values(by=['userID','Timestamp'], axis=0)
+
+
         return df
 
     def load_data_from_file(self, file_name, is_train=True):
@@ -90,16 +104,23 @@ class Preprocess:
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
-        
+        self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
+        self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
+        # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
 
 
-        df = df.sort_values(by=['userID','Timestamp'], axis=0)
-        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        df = df.sort_values(by=['userID','Time'], axis=0)
+        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'solTime','Time','sol_num']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
-                    r['assessmentItemID'].values,
+                    # r['assessmentItemID'].values,
+                    r['Category'].values,
+                    r['Number'].values,
                     r['KnowledgeTag'].values,
+                    r['solTime'].values,
+                    r['Time'].values,
+                    r['sol_num'].values,
                     r['answerCode'].values
                 )
             )
@@ -124,10 +145,11 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, question, tag, correct = row[0], row[1], row[2], row[3]
-        
+        # test, question, tag, soltime, time, correct = row[0], row[1], row[2], row[3], row[4], row[5]
+        test, category, number, tag, soltime, time, sol_num, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
 
-        cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, question, tag, soltime, time, correct]
+        cate_cols = [test, category, number, tag, soltime, time, sol_num, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
         if seq_len > self.args.max_seq_len:
