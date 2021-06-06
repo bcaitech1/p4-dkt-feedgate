@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 
+
 from .dataloader import get_loaders
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
@@ -10,6 +11,9 @@ from .metric import get_metric
 from .model import *
 
 import wandb
+
+from collections import OrderedDict
+import json
 
 def run(args, train_data, valid_data):
     train_loader, valid_loader = get_loaders(args, train_data, valid_data)
@@ -60,7 +64,6 @@ def run(args, train_data, valid_data):
         else:
             scheduler.step()
 
-
 def train(train_loader, model, optimizer, args):
     model.train()
 
@@ -70,7 +73,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[-1] # correct
+        targets = input[3] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -103,7 +106,6 @@ def train(train_loader, model, optimizer, args):
     print(f'TRAIN AUC : {auc} ACC : {acc}')
     return auc, acc, loss_avg
     
-
 def validate(valid_loader, model, args):
     model.eval()
 
@@ -113,7 +115,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[-1] # correct
+        targets = input[3] # correct
 
 
         # predictions
@@ -140,8 +142,6 @@ def validate(valid_loader, model, args):
 
     return auc, acc, total_preds, total_targets
 
-
-
 def inference(args, test_data):
     
     model = load_model(args)
@@ -156,10 +156,8 @@ def inference(args, test_data):
 
         preds = model(input)
         
-
         # predictions
         preds = preds[:,-1]
-        
 
         if args.device == 'cuda':
             preds = preds.to('cpu').detach().numpy()
@@ -168,14 +166,24 @@ def inference(args, test_data):
             
         total_preds+=list(preds)
 
-    write_path = os.path.join(args.output_dir, f"{args.name}.csv")
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)    
-    with open(write_path, 'w', encoding='utf8') as w:
-        print("writing prediction : {}".format(write_path))
-        w.write("id,prediction\n")
-        for id, p in enumerate(total_preds):
-            w.write('{},{}\n'.format(id,p))
+    # For flask serving
+    result = []
+    for i,v in enumerate(total_preds):
+        D = dict()
+        D['id'] = i
+        D['prediction'] = float(v)
+        result.append(D)
+    list_to_json=json.dumps(result)
+    return list_to_json
+
+    # write_path = os.path.join(args.output_dir, f"{args.name}.csv")
+    # if not os.path.exists(args.output_dir):
+    #     os.makedirs(args.output_dir)    
+    # with open(write_path, 'w', encoding='utf8') as w:
+    #     print("writing prediction : {}".format(write_path))
+    #     w.write("id,prediction\n")
+    #     for id, p in enumerate(total_preds):
+    #         w.write('{},{}\n'.format(id,p))
 
 
 
@@ -194,7 +202,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, category, number, tag, soltime, time, sol_num, correct, mask = batch
+    test, question, tag, correct, mask = batch
     
     
     # change to float
@@ -211,13 +219,8 @@ def process_batch(batch, args):
     # exit()
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
-    # question = ((question + 1) * mask).to(torch.int64)
-    category = ((category + 1) * mask).to(torch.int64)
-    number = ((number + 1) * mask).to(torch.int64)
+    question = ((question + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-    soltime = ((soltime + 1) * mask).to(torch.int64)
-    time = ((time + 1) * mask).to(torch.int64)
-    sol_num = ((sol_num + 1) * mask).to(torch.int64)
 
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -228,26 +231,18 @@ def process_batch(batch, args):
     # device memory로 이동
 
     test = test.to(args.device)
-    # question = question.to(args.device)
-    category = category.to(args.device)
-    number = number.to(args.device)
+    question = question.to(args.device)
 
 
     tag = tag.to(args.device)
-    soltime = soltime.to(args.device)
-    time = time.to(args.device)
-    sol_num = sol_num.to(args.device)
-
     correct = correct.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, category, number,
-            tag, soltime, time,
-            sol_num,
-            correct, mask,
+    return (test, question,
+            tag, correct, mask,
             interaction, gather_index)
 
 
@@ -257,6 +252,7 @@ def compute_loss(preds, targets):
     Args :
         preds   : (batch_size, max_seq_len)
         targets : (batch_size, max_seq_len)
+
     """
     loss = get_criterion(preds, targets)
     #마지막 시퀀드에 대한 값만 loss 계산
