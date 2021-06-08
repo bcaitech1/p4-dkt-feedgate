@@ -21,7 +21,7 @@ class Preprocess:
     def get_test_data(self):
         return self.test_data
 
-    def split_data(self, data, ratio=0.7, shuffle=True, seed=0):
+    def split_data(self, data, ratio=0.9, shuffle=True, seed=0):
         """
         split data into two parts with a given ratio.
         """
@@ -40,14 +40,12 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train = True):
-        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number']
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
             
         for col in cate_cols:
-            
-            
             le = LabelEncoder()
             if is_train:
                 #For UNKNOWN class
@@ -66,16 +64,30 @@ class Preprocess:
             df[col] = test
             
 
-        def convert_time(s):
-            timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-            return int(timestamp)
+        # def convert_time(s):
+        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
+        #     return int(timestamp)
 
-        df['Timestamp'] = df['Timestamp'].apply(convert_time)
+        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
         
         return df
 
     def __feature_engineering(self, df):
         #TODO
+        # category = df['assessmentItemID'].apply(lambda x: x[2])
+        # number = df['assessmentItemID'].apply(lambda x: x[0]+x[-6:])
+
+        # df['Category'] = category
+        # df['Number'] = number
+    
+        # def convert_time(s):
+        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
+        #     return int(timestamp)
+
+        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
+        # df = df.sort_values(by=['userID','Timestamp'], axis=0)
+
+
         return df
 
     def load_data_from_file(self, file_name, is_train=True):
@@ -90,16 +102,30 @@ class Preprocess:
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
-        
+        self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
+        self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
+        # self.args.n_ItemID_mean = len(np.load(os.path.join(self.args.asset_dir,'ItemID_mean_classes.npy')))
+        # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
 
 
-        df = df.sort_values(by=['userID','Timestamp'], axis=0)
-        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        df = df.sort_values(by=['userID','Time'], axis=0)
+        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 
+                    'solTime','Time', 'user_acc', 'ItemID_mean','test_mean','tag_mean', 'sol_num','cum_ans']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
                     r['assessmentItemID'].values,
+                    # r['Category'].values,
+                    # r['Number'].values,
                     r['KnowledgeTag'].values,
+                    # r['solTime'].values,
+                    # r['Time'].values,
+                    # r['user_acc'].values,
+                    # r['ItemID_mean'].values,
+                    # r['test_mean'].values,
+                    # r['tag_mean'].values,
+                    r['solTime'].values,
+                    r['sol_num'].values,
                     r['answerCode'].values
                 )
             )
@@ -124,12 +150,14 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, question, tag, correct = row[0], row[1], row[2], row[3]
-        
+        test, question, tag, soltime, time,  correct = row[0], row[1], row[2], row[3], row[4], row[5]
+        # test, category, number, tag, soltime, time, user_acc, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
 
-        cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, question, tag, soltime, time, correct]
+        cate_cols = [test, question, tag, soltime, time, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
+
         if seq_len > self.args.max_seq_len:
             for i, col in enumerate(cate_cols):
                 cate_cols[i] = col[-self.args.max_seq_len:]
@@ -141,9 +169,11 @@ class DKTDataset(torch.utils.data.Dataset):
         # mask도 columns 목록에 포함시킴
         cate_cols.append(mask)
 
+
         # np.array -> torch.tensor 형변환
         for i, col in enumerate(cate_cols):
             cate_cols[i] = torch.tensor(col)
+        
 
         return cate_cols
 
@@ -172,13 +202,66 @@ def collate(batch):
     
     return tuple(col_list)
 
+def slidding_window(data, args):
+    window_size = args.max_seq_len
+    stride = 10
+    args.shuffle = True
+
+    augmented_datas = []
+    for row in data:
+        seq_len = len(row[0])
+
+        # 만약 window 크기보다 seq len이 같거나 작으면 augmentation을 하지 않는다
+        if seq_len <= window_size:
+            augmented_datas.append(row)
+        else:
+            total_window = ((seq_len - window_size) // stride) + 1
+            
+            # 앞에서부터 slidding window 적용
+            for window_i in range(total_window):
+                # window로 잘린 데이터를 모으는 리스트
+                window_data = []
+                for col in row:
+                    window_data.append(col[window_i*stride:window_i*stride + window_size])
+
+                # Shuffle
+                # 마지막 데이터의 경우 shuffle을 하지 않는다
+                if args.shuffle and window_i + 1 != total_window:
+                    shuffle_datas = shuffle(window_data, window_size, args)
+                    augmented_datas += shuffle_datas
+                else:
+                    augmented_datas.append(tuple(window_data))
+
+            # slidding window에서 뒷부분이 누락될 경우 추가
+            total_len = window_size + (stride * (total_window - 1))
+            if seq_len != total_len:
+                window_data = []
+                for col in row:
+                    window_data.append(col[-window_size:])
+                augmented_datas.append(tuple(window_data))
+
+
+    return augmented_datas
+
+def shuffle(data, data_size, args):
+    shuffle_datas = []
+    args.shuffle_n = 1
+    for i in range(args.shuffle_n):
+        # shuffle 횟수만큼 window를 랜덤하게 계속 섞어서 데이터로 추가
+        shuffle_data = []
+        random_index = np.random.permutation(data_size)
+        for col in data:
+            shuffle_data.append(col[random_index])
+        shuffle_datas.append(tuple(shuffle_data))
+    return shuffle_datas
 
 def get_loaders(args, train, valid):
 
     pin_memory = True
     train_loader, valid_loader = None, None
-    
     if train is not None:
+        train = slidding_window(train, args)
+        # print(type(train))
         trainset = DKTDataset(train, args)
         train_loader = torch.utils.data.DataLoader(trainset, num_workers=args.num_workers, shuffle=True,
                             batch_size=args.batch_size, pin_memory=pin_memory, collate_fn=collate)
@@ -186,5 +269,7 @@ def get_loaders(args, train, valid):
         valset = DKTDataset(valid, args)
         valid_loader = torch.utils.data.DataLoader(valset, num_workers=args.num_workers, shuffle=False,
                             batch_size=args.batch_size, pin_memory=pin_memory, collate_fn=collate)
+    
+
 
     return train_loader, valid_loader
