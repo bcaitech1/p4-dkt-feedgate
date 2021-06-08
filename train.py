@@ -55,7 +55,6 @@ def main(args):
         print(f'We will use the GPU : {torch.cuda.get_device_name(0)}')
 
     wandb.login()
-
     preprocess = Preprocess(args)
     preprocess.load_train_data(args.file_name)
     train_data = preprocess.get_train_data()

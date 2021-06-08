@@ -21,7 +21,7 @@ class Preprocess:
     def get_test_data(self):
         return self.test_data
 
-    def split_data(self, data, ratio=0.7, shuffle=True, seed=0):
+    def split_data(self, data, ratio=0.9, shuffle=True, seed=0):
         """
         split data into two parts with a given ratio.
         """
@@ -46,8 +46,6 @@ class Preprocess:
             os.makedirs(self.args.asset_dir)
             
         for col in cate_cols:
-            
-            
             le = LabelEncoder()
             if is_train:
                 #For UNKNOWN class
@@ -106,17 +104,19 @@ class Preprocess:
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
         self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
         self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
+        # self.args.n_ItemID_mean = len(np.load(os.path.join(self.args.asset_dir,'ItemID_mean_classes.npy')))
         # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
 
 
         df = df.sort_values(by=['userID','Time'], axis=0)
-        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'solTime','Time', 'user_acc', 'ItemID_mean','test_mean','tag_mean']
+        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 
+                    'solTime','Time', 'user_acc', 'ItemID_mean','test_mean','tag_mean', 'sol_num','cum_ans']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
-                    # r['assessmentItemID'].values,
-                    r['Category'].values,
-                    r['Number'].values,
+                    r['assessmentItemID'].values,
+                    # r['Category'].values,
+                    # r['Number'].values,
                     r['KnowledgeTag'].values,
                     # r['solTime'].values,
                     # r['Time'].values,
@@ -125,7 +125,7 @@ class Preprocess:
                     # r['test_mean'].values,
                     # r['tag_mean'].values,
                     r['solTime'].values,
-                    r['Time'].values,
+                    r['sol_num'].values,
                     r['answerCode'].values
                 )
             )
@@ -150,11 +150,11 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, category, number, tag, soltime, time, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
+        test, question, tag, soltime, time,  correct = row[0], row[1], row[2], row[3], row[4], row[5]
         # test, category, number, tag, soltime, time, user_acc, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
 
         # cate_cols = [test, question, tag, soltime, time, correct]
-        cate_cols = [test, category, number, tag, soltime, time, correct]
+        cate_cols = [test, question, tag, soltime, time, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
 
@@ -261,7 +261,7 @@ def get_loaders(args, train, valid):
     train_loader, valid_loader = None, None
     if train is not None:
         train = slidding_window(train, args)
-        print(type(train))
+        # print(type(train))
         trainset = DKTDataset(train, args)
         train_loader = torch.utils.data.DataLoader(trainset, num_workers=args.num_workers, shuffle=True,
                             batch_size=args.batch_size, pin_memory=pin_memory, collate_fn=collate)
