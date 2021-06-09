@@ -34,15 +34,6 @@ class LSTM(nn.Module):
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-<<<<<<< HEAD
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
-
-        # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
-=======
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//6)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//6)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//6)
@@ -64,7 +55,6 @@ class LSTM(nn.Module):
 
         # embedding combination projection
         self.comb_proj = nn.Linear((self.hidden_dim//6)*6, self.hidden_dim)
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -94,11 +84,6 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-<<<<<<< HEAD
-        test, question, tag, _, mask, interaction, _ = input
-
-        batch_size = interaction.size(0)
-=======
         test, question, tag, soltime, time, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
@@ -109,17 +94,11 @@ class LSTM(nn.Module):
         # test_mean = torch.unsqueeze(test_mean,2)
         # tag_mean = torch.unsqueeze(tag_mean,2)
         # sol_num = torch.unsqueeze(sol_num,2)
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         # Embedding
 
-        embed_interaction = self.embedding_interaction(interaction)
+        embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
-<<<<<<< HEAD
-        embed_question = self.embedding_question(question)
-        embed_tag = self.embedding_tag(tag)
-        
-=======
         # embed_category = self.embedding_category(category)
         # embed_number = self.embedding_number(number)
         embed_question = self.embedding_question(question)
@@ -135,14 +114,10 @@ class LSTM(nn.Module):
         # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
         # linear_test_mean = self.linear_test_mean(test_mean.float())
         # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         embed = torch.cat([embed_interaction,
                            embed_test,
                            embed_question,
-<<<<<<< HEAD
-                           embed_tag,], 2)
-=======
                         #    embed_category,
                         #    embed_number,
                            embed_tag,
@@ -154,7 +129,6 @@ class LSTM(nn.Module):
                         #    linear_tag_mean,
                            linear_soltime,
                            linear_time,], 2)
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         X = self.comb_proj(embed)
 
@@ -184,15 +158,6 @@ class LSTMATTN(nn.Module):
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-<<<<<<< HEAD
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
-
-        # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
-=======
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//8)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//8)
         self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//8)
@@ -210,7 +175,6 @@ class LSTMATTN(nn.Module):
         # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
         # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
         # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         # embedding combination projection
         self.comb_proj = nn.Linear((self.hidden_dim//8)*8, self.hidden_dim)
@@ -254,11 +218,6 @@ class LSTMATTN(nn.Module):
 
     def forward(self, input):
 
-<<<<<<< HEAD
-        test, question, tag, _, mask, interaction, _ = input
-
-        batch_size = interaction.size(0)
-=======
         test, question, tag, user_acc, ItemID_mean, soltime, time, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
@@ -268,17 +227,15 @@ class LSTMATTN(nn.Module):
         # test_mean = torch.unsqueeze(test_mean,2)
         # tag_mean = torch.unsqueeze(tag_mean,2)
         # sol_num = torch.unsqueeze(sol_num,2)
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         # Embedding
 
         embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
+        # embed_category = self.embedding_category(category)
+        # embed_number = self.embedding_number(number)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
-<<<<<<< HEAD
-        
-=======
         embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
 
         #Linear
@@ -289,14 +246,10 @@ class LSTMATTN(nn.Module):
         linear_user_acc = self.linear_user_acc(user_acc.float())
         # linear_test_mean = self.linear_test_mean(test_mean.float())
         # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         embed = torch.cat([embed_interaction,
                            embed_test,
                            embed_question,
-<<<<<<< HEAD
-                           embed_tag,], 2)
-=======
                         #    embed_category,
                         #    embed_number,
                            embed_tag,
@@ -308,7 +261,6 @@ class LSTMATTN(nn.Module):
                         #    linear_tag_mean,
                            linear_soltime,
                            linear_time,], 2)
->>>>>>> d6bfc0cfc6e4d27dee842ad554f70d0a340eceb3
 
         X = self.comb_proj(embed)
 
