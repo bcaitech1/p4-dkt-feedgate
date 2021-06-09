@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
 
+#parameters can be tune
 seed=42
+max_seq_len=20
+num_workers=1
+hidden_dim=62
+n_layers=2
+n_heads=2
+drop_out=0.2
+
+n_epochs=20
+batch_size=64
+lr=0.001
+clip_grad=10
+patience=5
+
+model='lstm'
+optimizer='adam'
+scheduler='plateau'
+
+#wandb name
+name='testmodel'
 
 device=gpu
 #data path
@@ -14,26 +34,7 @@ model_name='model.pt'
 output_dir='output/'
 test_file_name='test_data.csv'
 
-max_seq_len=20
-num_workers=1
-
-
-hidden_dim=64
-n_layers=2
-n_heads=2
-drop_out=0.2
-
-
-n_epochs=20
-batch_size=64
-lr=0.001
-clip_grad=10
-patience=5
-
 log_steps=50
-model='lstm'
-optimizer='adam'
-scheduler='plateau'
 
 #wandb
 name='testmodel'
