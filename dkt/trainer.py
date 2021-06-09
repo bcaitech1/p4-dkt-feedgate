@@ -41,7 +41,7 @@ def run(args, train_data, valid_data):
 
         ### TODO: model save or early stopping
         wandb.log({"epoch": epoch, "train_loss": train_loss, "train_auc": train_auc, "train_acc":train_acc,
-                  "valid_auc":auc, "valid_acc":acc})
+                  "valid_auc":auc, "valid_acc":acc,"lr":optimizer.param_groups[0]['lr']})
         if auc > best_auc:
             best_auc = auc
             # torch.nn.DataParallel로 감싸진 경우 원래의 model을 가져옵니다.
@@ -74,7 +74,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[3] # correct
+        targets = input[5] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -116,7 +116,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[3] # correct
+        targets = input[5] # correct
 
 
         # predictions
@@ -203,7 +203,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, question, tag, correct, mask = batch
+    test, question, tag, soltime,  time, correct, mask = batch
     
     
     # change to float
@@ -214,15 +214,24 @@ def process_batch(batch, args):
     #    saint의 경우 decoder에 들어가는 input이다
     interaction = correct + 1 # 패딩을 위해 correct값에 1을 더해준다.
     interaction = interaction.roll(shifts=1, dims=1)
-    interaction[:, 0] = 0 # set padding index to the first sequence
-    interaction = (interaction * mask).to(torch.int64)
+    interaction_mask = mask.roll(shifts=1,dims=1)
+    interaction_mask[:, 0] = 0 # set padding index to the first sequence
+    interaction = (interaction * interaction_mask).to(torch.int64)
     # print(interaction)
     # exit()
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
+    # category = ((category + 1) * mask).to(torch.int64)
+    # number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-
+    time = ((time + 1) * mask).to(torch.int64)
+    # user_acc = ((user_acc + 1) * mask).to(torch.int64)
+    # ItemID_mean = ((ItemID_mean + 1) * mask).to(torch.int64)
+    # test_mean = ((test_mean + 1) * mask).to(torch.int64)
+    # tag_mean = ((tag_mean + 1) * mask).to(torch.int64)
+    soltime = ((soltime + 1) * mask).to(torch.int64)
+    
     # gather index
     # 마지막 sequence만 사용하기 위한 index
     gather_index = torch.tensor(np.count_nonzero(mask, axis=1))
@@ -233,17 +242,29 @@ def process_batch(batch, args):
 
     test = test.to(args.device)
     question = question.to(args.device)
+    # category = category.to(args.device)
+    # number = number.to(args.device)
 
 
     tag = tag.to(args.device)
+    time = time.to(args.device)
+    # user_acc = user_acc.to(args.device)
+    # ItemID_mean = ItemID_mean.to(args.device)
+    # test_mean = test_mean.to(args.device)
+    # tag_mean = tag_mean.to(args.device)
+    soltime = soltime.to(args.device)
+
     correct = correct.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, question,
-            tag, correct, mask,
+    return (test, question, tag,
+            # user_acc, ItemID_mean,
+            # test_mean, tag_mean,
+            soltime, time,
+            correct, mask,
             interaction, gather_index)
 
 
