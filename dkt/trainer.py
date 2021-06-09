@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 
+print(os.getcwd())
 
 from .dataloader import get_loaders
 from .optimizer import get_optimizer
@@ -277,11 +278,9 @@ def save_checkpoint(state, model_dir, model_filename):
 
 
 def load_model(args):
-    
-    
     model_path = os.path.join(args.model_dir, args.model_name)
     print("Loading Model from:", model_path)
-    load_state = torch.load(model_path)
+    load_state = torch.load(model_path,map_location=torch.device('cpu'))
     model = get_model(args)
 
     # 1. load model state

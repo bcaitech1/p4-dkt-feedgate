@@ -55,12 +55,11 @@ def main(args):
         print(f'We will use the GPU : {torch.cuda.get_device_name(0)}')
 
     wandb.login()
-
     preprocess = Preprocess(args)
     preprocess.load_train_data(args.file_name)
     train_data = preprocess.get_train_data()
-    
     train_data, valid_data = preprocess.split_data(train_data)
+    # train_data, valid_data = preprocess.load_data_from_file_2(args.file_name)
     
     wandb.init(project='dkt', config=vars(args), name=args.name)
     trainer.run(args, train_data, valid_data)

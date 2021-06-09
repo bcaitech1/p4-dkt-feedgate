@@ -79,6 +79,8 @@ class Preprocess:
         return df
 
     def load_data_from_file(self, file_name, is_train=True):
+        print('=======')
+        print(self.args.data_dir, file_name)
         csv_file_path = os.path.join(self.args.data_dir, file_name)
         df = pd.read_csv(csv_file_path)#, nrows=100000)
         df = self.__feature_engineering(df)

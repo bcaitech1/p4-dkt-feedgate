@@ -5,6 +5,7 @@ wandb
 output
 asset
 models
+notes
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/
