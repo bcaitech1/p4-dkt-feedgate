@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from dkt.dataloader import get_loaders
-from flask_model import LSTM
+from dkt.model import LSTM
 
 
 

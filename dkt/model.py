@@ -69,7 +69,8 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, _, mask, interaction, _ = input
+        test, question, tag, _, mask, *interaction = input
+        interaction = interaction[0]
 
         batch_size = interaction.size(0)
 
