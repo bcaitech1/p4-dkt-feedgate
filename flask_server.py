@@ -5,6 +5,7 @@ import os.path as p
 import numpy as np
 from torchvision import transforms
 from flask import Flask, jsonify, request
+import datetime
 # from dkt.model import LSTM
 from flask_trainer import load_model, get_model
 import torch.nn as nn
@@ -39,9 +40,11 @@ def get_score():
     data = request.json
     user_data = []
     print(data)
+    t = str(datetime.datetime.now())[:-7]#.strftime('%Y-%m-%d %H:%M:%S') # plus
+    
     for d in data:
         if 'answer' in d:
-            row = [d['assess_id'], d['test_id'],d['tag'], d['answer']]
+            row = [d['assess_id'], d['test_id'],d['tag'], t, d['answer']]
             user_data.append(row)
      
     print(user_data)

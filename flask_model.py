@@ -6,8 +6,6 @@ import copy
 import math
 
 
-
-
 class LSTM(nn.Module):
 
     def __init__(self, args):
