@@ -37,23 +37,20 @@ def gen_data(data):
             1. Read train/test/dummy .csv file for make frame columns 
             2. Make Dataframe 
     """
-    # 이 csv는 inference 다음에 다시 새로운 데이터가 들어가야 하는 파일. 
-    df = pd.read_csv("questions_1.csv")
-    new_columns = df.columns.tolist()+['answerCode'] 
-    new_df = pd.DataFrame([],columns=new_columns+['userID'])
+    # [To-Do] Refactor later for skip reading csv
+    df = pd.read_csv("questions.csv")
+    new_columns = df.columns.tolist()
+
+    user_actions = pd.DataFrame(data, columns=new_columns)   
+
+    user_actions['answerCode'].fillna(-1, inplace=True)
+    user_actions['answerCode']=user_actions['answerCode'].astype(int)
+    user_actions['KnowledgeTag']=user_actions['KnowledgeTag'].astype(str)
     
-    for index, row in df.iterrows():
-        user_actions = pd.DataFrame(data, columns=new_columns)    
-        user_actions['userID'] = index
-        new_df=new_df.append(user_actions)
-        row['userID'] = index
-        new_df=new_df.append(row)
-    
-    new_df['answerCode'].fillna(-1, inplace=True)
-    new_df['answerCode']=new_df['answerCode'].astype(int)
-    new_df['KnowledgeTag']=new_df['KnowledgeTag'].astype(str)
-    
-    return new_df
+    # Save for next train 
+    save_df = df.append(user_actions,ignore_index=True)
+    save_df.to_csv('/opt/ml/code/questions.csv', index=False)
+    return user_actions
 
     
 def inference(data):
@@ -64,7 +61,7 @@ def inference(data):
             - result : after inference, it might be the calculated score or probability.
     """
     # [To-Do] Generate data, firstly formatted by csv columns
-    data = gen_data(data)
+    data = gen_data(data) # new_df
     
     # Pre-processing user data
     preprocess = Preprocess(args)

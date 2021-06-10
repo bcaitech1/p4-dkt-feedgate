@@ -29,14 +29,14 @@ def inference(args, test_data):
         total_preds+=list(preds)
 
     # Write prediction file
-    write_path = os.path.join(args.output_dir, f"{args.name}.csv")
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)    
-    with open(write_path, 'w', encoding='utf8') as w:
-        print("writing prediction : {}".format(write_path))
-        w.write("id,prediction\n")
-        for id, p in enumerate(total_preds):
-            w.write('{},{}\n'.format(id,p))
+    # write_path = os.path.join(args.output_dir, f"{args.name}.csv")
+    # if not os.path.exists(args.output_dir):
+    #     os.makedirs(args.output_dir)    
+    # with open(write_path, 'w', encoding='utf8') as w:
+    #     print("writing prediction : {}".format(write_path))
+    #     w.write("id,prediction\n")
+    #     for id, p in enumerate(total_preds):
+    #         w.write('{},{}\n'.format(id,p))
     
     # Serving result
     return 100*sum(total_preds)/len(total_preds)
