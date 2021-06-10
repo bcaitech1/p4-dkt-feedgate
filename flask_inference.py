@@ -1,5 +1,5 @@
 import os
-from flask_dataloader import Preprocess
+from dkt.dataloader import Preprocess
 import flask_trainer as trainer
 import torch
 import pandas as pd
@@ -49,7 +49,6 @@ def gen_data(data):
 def inference(data):
     
     data = gen_data(data)
-    
     
     # (바뀐 부분)
     preprocess = Preprocess(args)
