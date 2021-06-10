@@ -8,7 +8,7 @@ from dkt.utils import setSeeds
 from easydict import EasyDict
 import wandb
 from prettyprinter import cpprint
-from config import config
+from config_dir import config
 
 # Set Config
 class YamlConfigManager:
