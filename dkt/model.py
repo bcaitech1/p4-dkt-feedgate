@@ -8,9 +8,9 @@ import sys
 import types
 
 try:
-    from transformers.modeling_bert import BertConfig, BertEncoder, BertModel    
+    from transformers.modeling_bert import BertConfig, BertEncoder, BertModel
 except:
-    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel    
+    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel
 
 
 def str_to_class(field):
@@ -32,36 +32,45 @@ class LSTM(nn.Module):
         self.hidden_dim = self.args.hidden_dim
         self.n_layers = self.args.n_layers
 
+
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//6)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//6)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//6)
-        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//7)
-        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//7)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//6)
+        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//9)
+        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//9)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//9)
+        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//8)
+        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//8)
+        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//9)
+        # self.embedding_retest = nn.Embedding(self.args.n_retest + 1, self.hidden_dim//8)
+
         # self.embedding_ItemID_mean = nn.Embedding(self.args.n_ItemID_mean + 1, self.hidden_dim//8)
         # self.embedding_soltime = nn.Embedding(self.args.n_cate_time + 1, self.hidden_dim//3)
 
         #Linear
-        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//6), nn.LayerNorm(self.hidden_dim//6))
-        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//6), nn.LayerNorm(self.hidden_dim//6))
-        
+        self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_tag_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_cum_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        # self.linear_tag_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+
+        # self.linear_tag_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+
         # self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
         # self.linear_ItemID_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
         # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
         # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//6)*6, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//9)*9, self.hidden_dim)
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
                             self.n_layers,
                             batch_first=True,
                             bidirectional =True)
-        
+
         # Fully connected layer
         self.fc = nn.Linear(self.hidden_dim*2, 1)
 
@@ -84,11 +93,18 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, soltime, time, _, mask, interaction, _ = input
+        test, question, tag, user_acc, tag_acc, soltime, sol_num, cum_ans, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
         soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
-        time = torch.unsqueeze(time,2)
+        user_acc = torch.unsqueeze(user_acc,2)
+        tag_acc = torch.unsqueeze(tag_acc,2)
+        sol_num = torch.unsqueeze(sol_num,2)
+        cum_ans = torch.unsqueeze(cum_ans,2)
+        # tag_cnt = torch.unsqueeze(tag_cnt,2)
+
+        # tag_ans = torch.unsqueeze(tag_ans,2)
+
         # user_acc = torch.unsqueeze(user_acc,2)
         # ItemID_mean = torch.unsqueeze(ItemID_mean,2)
         # test_mean = torch.unsqueeze(test_mean,2)
@@ -106,10 +122,15 @@ class LSTM(nn.Module):
         # embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
 
         #Linear
-
         linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
+        linear_user_acc = self.linear_user_acc(user_acc.float())
+        linear_tag_acc = self.linear_tag_acc(tag_acc.float())
         # embed_soltime = self.embedding_soltime(soltime)
-        linear_time = self.linear_time(time.float())
+        linear_sol_num = self.linear_sol_num(sol_num.float())
+        linear_cum_ans = self.linear_cum_ans(cum_ans.float())
+        # linear_tag_cnt = self.linear_tag_cnt(tag_cnt.float())
+        # linear_tag_ans = self.linear_tag_ans(tag_ans.float())
+
         # linear_user_acc = self.linear_user_acc(user_acc.float())
         # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
         # linear_test_mean = self.linear_test_mean(test_mean.float())
@@ -121,14 +142,17 @@ class LSTM(nn.Module):
                         #    embed_category,
                         #    embed_number,
                            embed_tag,
-                        #    
+                        #    linear_tag_cnt,
                         #    linear_time,
                         #    linear_user_acc,
-                        #    linear_ItemID_mean,
+                        #    linear_tag_mean,
                         #    linear_test_mean,
                         #    linear_tag_mean,
+                           linear_user_acc,
+                           linear_tag_acc,
                            linear_soltime,
-                           linear_time,], 2)
+                           linear_sol_num,
+                           linear_cum_ans,], 2)
 
         X = self.comb_proj(embed)
 
@@ -140,7 +164,6 @@ class LSTM(nn.Module):
         preds = self.activation(out).view(batch_size, -1)
 
         return preds
-
 
 
 
@@ -158,26 +181,35 @@ class LSTMATTN(nn.Module):
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//8)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//8)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//8)
-        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//7)
-        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//7)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//8)
-        self.embedding_ItemID_mean = nn.Embedding(self.args.n_ItemID_mean + 1, self.hidden_dim//8)
+        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//9)
+        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//9)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//9)
+        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//8)
+        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//8)
+        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//9)
+        # self.embedding_retest = nn.Embedding(self.args.n_retest + 1, self.hidden_dim//8)
+
+        # self.embedding_ItemID_mean = nn.Embedding(self.args.n_ItemID_mean + 1, self.hidden_dim//8)
         # self.embedding_soltime = nn.Embedding(self.args.n_cate_time + 1, self.hidden_dim//3)
 
         #Linear
-        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        
-        self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+        self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_tag_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_cum_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        # self.linear_tag_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+
+        # self.linear_tag_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+
+        # self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+        # self.linear_ItemID_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
         # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
         # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//8)*8, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//9)*9, self.hidden_dim)
         
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -218,12 +250,20 @@ class LSTMATTN(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, user_acc, ItemID_mean, soltime, time, _, mask, interaction, _ = input
+        test, question, tag, user_acc, tag_acc, soltime, sol_num, cum_ans, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
         soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
-        time = torch.unsqueeze(time,2)
         user_acc = torch.unsqueeze(user_acc,2)
+        tag_acc = torch.unsqueeze(tag_acc,2)
+        sol_num = torch.unsqueeze(sol_num,2)
+        cum_ans = torch.unsqueeze(cum_ans,2)
+        # tag_cnt = torch.unsqueeze(tag_cnt,2)
+
+        # tag_ans = torch.unsqueeze(tag_ans,2)
+
+        # user_acc = torch.unsqueeze(user_acc,2)
+        # ItemID_mean = torch.unsqueeze(ItemID_mean,2)
         # test_mean = torch.unsqueeze(test_mean,2)
         # tag_mean = torch.unsqueeze(tag_mean,2)
         # sol_num = torch.unsqueeze(sol_num,2)
@@ -236,14 +276,20 @@ class LSTMATTN(nn.Module):
         # embed_number = self.embedding_number(number)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
-        embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
+        # embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
 
         #Linear
-        
         linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
-        # embed_soltime = self.embedding_soltime(soltime)
-        linear_time = self.linear_time(time.float())
         linear_user_acc = self.linear_user_acc(user_acc.float())
+        linear_tag_acc = self.linear_tag_acc(tag_acc.float())
+        # embed_soltime = self.embedding_soltime(soltime)
+        linear_sol_num = self.linear_sol_num(sol_num.float())
+        linear_cum_ans = self.linear_cum_ans(cum_ans.float())
+        # linear_tag_cnt = self.linear_tag_cnt(tag_cnt.float())
+        # linear_tag_ans = self.linear_tag_ans(tag_ans.float())
+
+        # linear_user_acc = self.linear_user_acc(user_acc.float())
+        # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
         # linear_test_mean = self.linear_test_mean(test_mean.float())
         # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
 
@@ -253,14 +299,17 @@ class LSTMATTN(nn.Module):
                         #    embed_category,
                         #    embed_number,
                            embed_tag,
-                        #    
+                        #    linear_tag_cnt,
                         #    linear_time,
-                           linear_user_acc,
-                           embedding_ItemID_mean,
+                        #    linear_user_acc,
+                        #    linear_tag_mean,
                         #    linear_test_mean,
                         #    linear_tag_mean,
+                           linear_user_acc,
+                           linear_tag_acc,
                            linear_soltime,
-                           linear_time,], 2)
+                           linear_sol_num,
+                           linear_cum_ans,], 2)
 
         X = self.comb_proj(embed)
 

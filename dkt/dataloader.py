@@ -74,19 +74,6 @@ class Preprocess:
 
     def __feature_engineering(self, df):
         #TODO
-        # category = df['assessmentItemID'].apply(lambda x: x[2])
-        # number = df['assessmentItemID'].apply(lambda x: x[0]+x[-6:])
-
-        # df['Category'] = category
-        # df['Number'] = number
-    
-        # def convert_time(s):
-        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-        #     return int(timestamp)
-
-        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
-        # df = df.sort_values(by=['userID','Timestamp'], axis=0)
-
 
         return df
 
@@ -109,8 +96,13 @@ class Preprocess:
 
 
         df = df.sort_values(by=['userID','Time'], axis=0)
-        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 
-                    'solTime','Time', 'user_acc', 'ItemID_mean','test_mean','tag_mean', 'sol_num','cum_ans']
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'Timestamp',
+                    'KnowledgeTag', 'Category', 'Number', 'Time', 'solTime', 'item',
+                    'item_order', 'user_total_correct_cnt', 'user_total_ans_cnt',
+                    'user_total_acc', 'test_size', 'retest', 'user_test_ans_cnt',
+                    'user_test_correct_cnt', 'user_acc', 'test_mean', 'test_sum',
+                    'ItemID_mean', 'ItemID_sum', 'tag_mean', 'tag_sum', 'sol_num',
+                    'cum_ans','tag_acc']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
@@ -119,13 +111,13 @@ class Preprocess:
                     # r['Number'].values,
                     r['KnowledgeTag'].values,
                     # r['solTime'].values,
-                    # r['Time'].values,
-                    # r['user_acc'].values,
-                    # r['ItemID_mean'].values,
+                    # r['test_acc'].values,
+                    r['user_acc'].values,
+                    r['tag_acc'].values,
                     # r['test_mean'].values,
-                    # r['tag_mean'].values,
                     r['solTime'].values,
                     r['sol_num'].values,
+                    r['cum_ans'].values,
                     r['answerCode'].values
                 )
             )
@@ -150,11 +142,11 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, question, tag, soltime, time,  correct = row[0], row[1], row[2], row[3], row[4], row[5]
+        test, question , tag, user_acc, tag_acc, soltime, sol_num, cum_ans, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]
         # test, category, number, tag, soltime, time, user_acc, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
 
         # cate_cols = [test, question, tag, soltime, time, correct]
-        cate_cols = [test, question, tag, soltime, time, correct]
+        cate_cols = [test, question, tag, user_acc, tag_acc, soltime, sol_num, cum_ans, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
 

@@ -17,10 +17,12 @@ def run(args, train_data, valid_data):
     # only when using warmup scheduler
     args.total_steps = int(len(train_loader.dataset) / args.batch_size) * (args.n_epochs)
     args.warmup_steps = args.total_steps // 10
-            
+
+    
     model = get_model(args)
     optimizer = get_optimizer(model, args)
     scheduler = get_scheduler(optimizer, args)
+
 
     best_auc = -1
     early_stopping_counter = 0
@@ -70,8 +72,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[5] # correct
-
+        targets = input[8] # correct
 
         loss = compute_loss(preds, targets)
         update_params(loss, model, optimizer, args)
@@ -92,7 +93,7 @@ def train(train_loader, model, optimizer, args):
         total_preds.append(preds)
         total_targets.append(targets)
         losses.append(loss)
-      
+
 
     total_preds = np.concatenate(total_preds)
     total_targets = np.concatenate(total_targets)
@@ -102,7 +103,7 @@ def train(train_loader, model, optimizer, args):
     loss_avg = sum(losses)/len(losses)
     print(f'TRAIN AUC : {auc} ACC : {acc}')
     return auc, acc, loss_avg
-    
+
 
 def validate(valid_loader, model, args):
     model.eval()
@@ -113,8 +114,7 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[5] # correct
-
+        targets = input[8] # correct
 
         # predictions
         preds = preds[:,-1]
@@ -155,11 +155,9 @@ def inference(args, test_data):
         input = process_batch(batch, args)
 
         preds = model(input)
-        
 
         # predictions
         preds = preds[:,-1]
-        
 
         if args.device == 'cuda':
             preds = preds.to('cpu').detach().numpy()
@@ -178,8 +176,6 @@ def inference(args, test_data):
             w.write('{},{}\n'.format(id,p))
 
 
-
-
 def get_model(args):
     """
     Load model and move tensors to a given devices.
@@ -194,7 +190,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, question, tag, soltime,  time, correct, mask = batch
+    test, question, tag, user_acc, tag_acc, soltime,  sol_num, cum_ans, correct, mask = batch
     
     
     # change to float
@@ -216,12 +212,16 @@ def process_batch(batch, args):
     # category = ((category + 1) * mask).to(torch.int64)
     # number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-    time = ((time + 1) * mask).to(torch.int64)
+    sol_num = ((sol_num + 1) * mask).to(torch.int64)
     # user_acc = ((user_acc + 1) * mask).to(torch.int64)
-    # ItemID_mean = ((ItemID_mean + 1) * mask).to(torch.int64)
+    # category = ((category + 1) * mask).to(torch.int64)
     # test_mean = ((test_mean + 1) * mask).to(torch.int64)
     # tag_mean = ((tag_mean + 1) * mask).to(torch.int64)
+    user_acc = ((user_acc + 1) * mask).to(torch.int64)
+    tag_acc = ((tag_acc + 1) * mask).to(torch.int64)
     soltime = ((soltime + 1) * mask).to(torch.int64)
+    cum_ans = ((cum_ans + 1) * mask).to(torch.int64)
+    # tag_cnt = ((tag_cnt + 1) * mask).to(torch.int64)
     
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -238,12 +238,17 @@ def process_batch(batch, args):
 
 
     tag = tag.to(args.device)
-    time = time.to(args.device)
+    sol_num = sol_num.to(args.device)
     # user_acc = user_acc.to(args.device)
-    # ItemID_mean = ItemID_mean.to(args.device)
+    # category = category.to(args.device)
     # test_mean = test_mean.to(args.device)
     # tag_mean = tag_mean.to(args.device)
+    user_acc = user_acc.to(args.device)
+    tag_acc = tag_acc.to(args.device)
     soltime = soltime.to(args.device)
+    cum_ans = cum_ans.to(args.device)
+    # tag_cnt = tag_cnt.to(args.device)
+    
 
     correct = correct.to(args.device)
     mask = mask.to(args.device)
@@ -251,10 +256,9 @@ def process_batch(batch, args):
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, question, tag,
-            # user_acc, ItemID_mean,
-            # test_mean, tag_mean,
-            soltime, time,
+    return (test, question, tag, 
+            user_acc, tag_acc,
+            soltime, sol_num, cum_ans,
             correct, mask,
             interaction, gather_index)
 
@@ -290,7 +294,6 @@ def save_checkpoint(state, model_dir, model_filename):
 
 def load_model(args):
     
-    
     model_path = os.path.join(args.model_dir, args.model_name)
     print("Loading Model from:", model_path)
     load_state = torch.load(model_path)
@@ -299,6 +302,6 @@ def load_model(args):
     # 1. load model state
     model.load_state_dict(load_state['state_dict'], strict=True)
    
-    
     print("Loading Model from:", model_path, "...Finished.")
     return model
+
