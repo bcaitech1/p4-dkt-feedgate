@@ -43,7 +43,7 @@ def get_score():
             user_data.append(row)
             
     score = flask_inference.inference(user_data)
-    score = int(score)
+    score = int(score*100)
     return str(score)
 
 if __name__ == '__main__':

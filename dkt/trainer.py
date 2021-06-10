@@ -147,7 +147,6 @@ def inference(args, test_data):
     model.eval()
     _, test_loader = get_loaders(args, None, test_data)
     
-    
     total_preds = []
     
     for step, batch in enumerate(test_loader):
@@ -165,25 +164,14 @@ def inference(args, test_data):
             
         total_preds+=list(preds)
 
-    # For flask serving
-    result = []
-    for i,v in enumerate(total_preds):
-        D = dict()
-        D['id'] = i
-        D['prediction'] = float(v)
-        result.append(D)
-    list_to_json=json.dumps(result)
-    return list_to_json
-
-    # write_path = os.path.join(args.output_dir, f"{args.name}.csv")
-    # if not os.path.exists(args.output_dir):
-    #     os.makedirs(args.output_dir)    
-    # with open(write_path, 'w', encoding='utf8') as w:
-    #     print("writing prediction : {}".format(write_path))
-    #     w.write("id,prediction\n")
-    #     for id, p in enumerate(total_preds):
-    #         w.write('{},{}\n'.format(id,p))
-
+    write_path = os.path.join(args.output_dir, f"{args.name}.csv")
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)    
+    with open(write_path, 'w', encoding='utf8') as w:
+        print("writing prediction : {}".format(write_path))
+        w.write("id,prediction\n")
+        for id, p in enumerate(total_preds):
+            w.write('{},{}\n'.format(id,p))
 
 
 
