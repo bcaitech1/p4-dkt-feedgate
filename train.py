@@ -71,4 +71,4 @@ if __name__ == "__main__":
     cfg = YamlConfigManager(args.config_path, args.config)
     config.set_args(args,cfg)
     os.makedirs(args.model_dir, exist_ok=True)
-    main(args)
+    main(args)  

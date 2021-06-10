@@ -77,11 +77,15 @@ class Preprocess:
         return df
 
     def load_data(self, df):
-        
+        """
+            (Input)
+                - df : dataframe of user data. 
+            (Caution)
+                - If you want to load csv (not dataframe), use `load_data_from_file()`. 
+        """
         df = self.__feature_engineering(df)
         df = self.__preprocessing(df)
         
-        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
@@ -103,8 +107,6 @@ class Preprocess:
         df = pd.read_csv(csv_file_path)#, nrows=100000)
         df = self.__feature_engineering(df)
         df = self.__preprocessing(df, is_train)
-
-        # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
 
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
@@ -172,12 +174,10 @@ class DKTDataset(torch.utils.data.Dataset):
 
 
 
-
 def collate(batch):
     col_n = len(batch[0])
     col_list = [[] for _ in range(col_n)]
     max_seq_len = len(batch[0][-1])
-
         
     # batch의 값들을 각 column끼리 그룹화
     for row in batch:

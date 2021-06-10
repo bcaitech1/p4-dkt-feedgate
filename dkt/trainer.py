@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 
-
 from .dataloader import get_loaders
 from .optimizer import get_optimizer
 from .scheduler import get_scheduler
@@ -275,9 +274,7 @@ def save_checkpoint(state, model_dir, model_filename):
     torch.save(state, os.path.join(model_dir, model_filename))
 
 
-
 def load_model(args):
-    
     
     model_path = os.path.join(args.model_dir, args.model_name)
     print("Loading Model from:", model_path)

@@ -3,9 +3,7 @@ import torch
 import numpy as np
 
 from dkt.dataloader import get_loaders
-from dkt.model import LSTM
-
-
+from dkt.model import LSTM, str_to_class
 
 def inference(args, test_data):
     
@@ -21,10 +19,8 @@ def inference(args, test_data):
 
         preds = model(input)
         
-
         # predictions
         preds = preds[:,-1]
-        
 
         if args.device == 'cuda':
             preds = preds.to('cpu').detach().numpy()
@@ -33,21 +29,34 @@ def inference(args, test_data):
             
         total_preds+=list(preds)
 
-    return 100*sum(total_preds)/len(total_preds)
+    # Write prediction file
+    write_path = os.path.join(args.output_dir, f"{args.name}.csv")
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)    
+    with open(write_path, 'w', encoding='utf8') as w:
+        print("writing prediction : {}".format(write_path))
+        w.write("id,prediction\n")
+        for id, p in enumerate(total_preds):
+            w.write('{},{}\n'.format(id,p))
     
-        
-
+    # Serving result
+    return 100*sum(total_preds)/len(total_preds)
 
 
 def get_model(args):
     """
     Load model and move tensors to a given devices.
     """
-    if args.model == 'lstm': model = LSTM(args)
-
-    # temp for initialize
-    model = LSTM(args)
-
+    # if args.model == 'lstm': model = LSTM(args)
+    # model = LSTM(args)
+    print('^^^^^^^^^^^^^^^^')
+    print(args)
+    ##################
+    print('############')
+    print(args.model)
+    model_class = str_to_class(args.model)
+    model = model_class(args)
+    ##################
     model.to(args.device)
 
     return model
@@ -57,7 +66,6 @@ def get_model(args):
 def process_batch(batch, args):
 
     test, question, tag, correct, mask = batch
-    
     
     # change to float
     mask = mask.type(torch.FloatTensor)
@@ -126,8 +134,6 @@ def save_checkpoint(state, model_dir, model_filename):
 
 
 def load_model(args):
-    
-    
     model_path = os.path.join(args.model_dir, args.model_name)
     print("Loading Model from:", model_path)
     load_state = torch.load(model_path, map_location=args.device)
@@ -135,7 +141,6 @@ def load_model(args):
 
     # 1. load model state
     model.load_state_dict(load_state['state_dict'], strict=True)
-   
     
     print("Loading Model from:", model_path, "...Finished.")
     return model
