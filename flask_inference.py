@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import sys
 import datetime as pydatetime
-from flask_train import YamlConfigManager
+from train import YamlConfigManager
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from args import parse_args
 from config_dir import config
