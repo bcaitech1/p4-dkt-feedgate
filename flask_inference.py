@@ -59,7 +59,7 @@ def gen_data(data):
 def inference(data):
     """
         (Input)
-            - data : user data (From Chrome Browser, Client choices were loaded.)
+            - data : `user data` (From Chrome Browser, Client choices were loaded.)
         (Output)
             - result : after inference, it might be the calculated score or probability.
     """
@@ -74,4 +74,5 @@ def inference(data):
 
     result = trainer.inference(args, test_data)
     print('result : ',result)
+
     return result    

@@ -7,10 +7,9 @@ from dkt.model import LSTM, str_to_class
 
 def inference(args, test_data):
     
-    model = args.model
+    model = args.model # (Difference) In base line, `model = load_model(args)`
     model.eval()
     _, test_loader = get_loaders(args, None, test_data)
-    
     
     total_preds = []
     
@@ -47,16 +46,8 @@ def get_model(args):
     """
     Load model and move tensors to a given devices.
     """
-    # if args.model == 'lstm': model = LSTM(args)
-    # model = LSTM(args)
-    print('^^^^^^^^^^^^^^^^')
-    print(args)
-    ##################
-    print('############')
-    print(args.model)
     model_class = str_to_class(args.model)
     model = model_class(args)
-    ##################
     model.to(args.device)
 
     return model
@@ -83,13 +74,10 @@ def process_batch(batch, args):
     question = ((question + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
 
-
-
     # device memory로 이동
 
     test = test.to(args.device)
     question = question.to(args.device)
-
 
     tag = tag.to(args.device)
     correct = correct.to(args.device)
@@ -124,7 +112,6 @@ def update_params(loss, model, optimizer, args):
     optimizer.zero_grad()
 
 
-
 def save_checkpoint(state, model_dir, model_filename):
     print('saving model ...')
     if not os.path.exists(model_dir):
@@ -139,7 +126,7 @@ def load_model(args):
     load_state = torch.load(model_path, map_location=args.device)
     model = get_model(args)
 
-    # 1. load model state
+    # load model state
     model.load_state_dict(load_state['state_dict'], strict=True)
     
     print("Loading Model from:", model_path, "...Finished.")
