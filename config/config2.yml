@@ -5,7 +5,7 @@ lstm:
   asset_dir: 'asset/'
   file_name: 'tuning_train_data_2.csv'
   model_dir: 'models/' # model directory
-  model_name: 'category+number_test3.pt' # save model as model_name
+  model_name: 'category+number+solTime+time+average_prob_correct_cate+past_user_prob_count.pt' # save model as model_name
   output_dir: 'output/'
   test_file_name: 'tuning_test_data_2.csv'  
   max_seq_len: 20
@@ -26,4 +26,4 @@ lstm:
     optimizer: 'adam'
     scheduler: 'plateau'
   wandb:
-    name: 'category+number_test3' # wandb run name
+    name: 'category+number+solTime+time+average_prob_correct_cate+past_user_prob_count' # wandb run name

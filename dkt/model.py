@@ -37,18 +37,24 @@ class LSTM(nn.Module):
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
-        # self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
-        self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//3)
-        self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//3)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
+        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//3)
+        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//3)
         self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
+        # self.embedding_average_prob_correct_cate = nn.Embedding(self.args.n_average_prob_correct_cate + 1, self.hidden_dim//3)
+        # self.embedding_average_user_correct_cate = nn.Embedding(self.args.n_average_user_correct_cate + 1, self.hidden_dim//3)
+        # self.embedding_past_user_prob_count = nn.Embedding(self.args.n_past_user_prob_count + 1, self.hidden_dim//3)
         # self.embedding_soltime = nn.Embedding(self.args.n_cate_time + 1, self.hidden_dim//3)
         # self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        # self.linear_clipped_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
         # self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        # self.linear_average_prob_correct = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        # self.linear_average_user_correct = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
         # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//3)*5, self.hidden_dim)
-        # self.comb_proj = nn.Linear((self.hidden_dim//3)*8, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
+        # self.comb_proj = nn.Linear((self.hidden_dim//3)*9, self.hidden_dim)
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -77,41 +83,55 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-        test, category, number, tag, _, mask, interaction, _ = input
-        # test, category, number, tag, soltime, time, sol_num, _, mask, interaction, _ = input
+        test, question, tag, _, mask, interaction, _ = input
+        # test, category, number, tag, _, mask, interaction, _ = input
+        # test, category, number, tag, time, _, mask, interaction, _ = input
+        # test, category, number, tag, soltime, time, average_prob_correct_cate, past_user_prob_count, _, mask, interaction, _ = input
+        # test, category, number, tag, clipped_soltime, time, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
         # soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
+        # clipped_soltime = torch.unsqueeze(clipped_soltime,2)
         # time = torch.unsqueeze(time,2)
+        # average_user_correct = torch.unsqueeze(average_user_correct, 2)
+        # average_prob_correct = torch.unsqueeze(average_prob_correct, 2)
         # sol_num = torch.unsqueeze(sol_num,2)
 
         # Embedding
 
         embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
-        embed_category = self.embedding_category(category)
-        embed_number = self.embedding_number(number)
-        # embed_question = self.embedding_question(question)
+        # embed_category = self.embedding_category(category)
+        # embed_number = self.embedding_number(number)
+        embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
-        # linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
         # embed_soltime = self.embedding_soltime(soltime)
+        # embed_average_prob_correct_cate = self.embedding_average_prob_correct_cate(average_prob_correct_cate)
+        # embed_average_user_correct_cate = self.embedding_average_user_correct_cate(average_user_correct_cate)
+        # embed_past_user_prob_count = self.embedding_past_user_prob_count(past_user_prob_count)
+        # linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
+        # linear_clipped_soltime = self.linear_clipped_soltime(clipped_soltime.float())
         # linear_time = self.linear_time(time.float()) 
+        # linear_average_prob_correct = self.linear_average_prob_correct(average_prob_correct.float()) 
+        # linear_average_user_correct = self.linear_average_user_correct(average_user_correct.float()) 
         # linear_sol_num = self.linear_sol_num(sol_num.float())
+        
 
         embed = torch.cat([embed_interaction,
                            embed_test,
-                           embed_category,
-                           embed_number,
+                           embed_question,
+                        #    embed_category,
+                        #    embed_number,
                            embed_tag,
+                        #    linear_soltime,
+                        #    linear_clipped_soltime,
+                        #    linear_time,
+                        #    linear_average_prob_correct,
+                        #    linear_average_user_correct,
+                        #    embed_average_prob_correct_cate,
+                        #    embed_average_user_correct_cate,
+                        #    embed_past_user_prob_count
                            ], 2)
-        # embed = torch.cat([embed_interaction,
-        #                    embed_test,
-        #                    embed_category,
-        #                    embed_number,
-        #                    embed_tag,
-        #                    linear_soltime,
-        #                    linear_time,
-        #                    linear_sol_num,], 2)
 
         X = self.comb_proj(embed)
 

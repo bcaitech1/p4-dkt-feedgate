@@ -20,7 +20,6 @@ def run(args, train_data, valid_data):
     args.warmup_steps = args.total_steps // 10
             
     model = get_model(args)
-    print(model)
     optimizer = get_optimizer(model, args)
     scheduler = get_scheduler(optimizer, args)
 
@@ -72,9 +71,8 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[4] # correct
-        print(preds)
-        print(targets)
+        # targets = input[4] # correct
+        targets = input[8] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -117,7 +115,8 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[4] # correct
+        # targets = input[4] # correct
+        targets = input[8] # correct
 
 
         # predictions
@@ -198,8 +197,10 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, category, number, tag, correct, mask = batch
-    # test, category, number, tag, soltime, time, sol_num, correct, mask = batch
+    # test, category, number, tag, correct, mask = batch
+    # test, category, number, tag, time, correct, mask = batch
+    test, category, number, tag, soltime, time, average_prob_correct_cate, past_user_prob_count, correct, mask = batch
+    # test, category, number, tag, clipped_soltime, time, correct, mask = batch
     
     
     # change to float
@@ -221,8 +222,9 @@ def process_batch(batch, args):
     category = ((category + 1) * mask).to(torch.int64)
     number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-    # soltime = ((soltime + 1) * mask).to(torch.int64)
-    # time = ((time + 1) * mask).to(torch.int64)
+    soltime = ((soltime + 1) * mask).to(torch.int64)
+    # clipped_soltime = ((clipped_soltime + 1) * mask).to(torch.int64)
+    time = ((time + 1) * mask).to(torch.int64)
     # sol_num = ((sol_num + 1) * mask).to(torch.int64)
 
     # hour = ((hour + 1) * mask).to(torch.int64)
@@ -230,8 +232,10 @@ def process_batch(batch, args):
     # average_user_correct = ((average_user_correct + 1) * mask).to(torch.int64)
     # average_tag_correct = ((average_tag_correct + 1) * mask).to(torch.int64)
     # average_prob_correct = ((average_prob_correct + 1) * mask).to(torch.int64)
+    average_prob_correct_cate = ((average_prob_correct_cate + 1) * mask).to(torch.int64)
+    # average_user_correct_cate = ((average_user_correct_cate + 1) * mask).to(torch.int64)
     # past_prob_count = ((past_prob_count + 1) * mask).to(torch.int64)
-    # past_user_content_count = ((past_user_content_count + 1) * mask).to(torch.int64)
+    past_user_prob_count = ((past_user_prob_count + 1) * mask).to(torch.int64)
     
 
     # gather index
@@ -247,10 +251,10 @@ def process_batch(batch, args):
     category = category.to(args.device)
     number = number.to(args.device)
 
-
     tag = tag.to(args.device)
-    # soltime = soltime.to(args.device)
-    # time = time.to(args.device)
+    soltime = soltime.to(args.device)
+    # clipped_soltime = clipped_soltime.to(args.device)
+    time = time.to(args.device)
     # sol_num = sol_num.to(args.device)
 
     correct = correct.to(args.device)
@@ -259,29 +263,29 @@ def process_batch(batch, args):
     # average_user_correct = average_user_correct.to(args.device)
     # average_tag_correct = average_tag_correct.to(args.device)
     # average_prob_correct = average_prob_correct.to(args.device)
+    average_prob_correct_cate = average_prob_correct_cate.to(args.device)
+    # average_user_correct_cate = average_user_correct_cate.to(args.device)
     # past_prob_count = past_prob_count.to(args.device)
-    # past_user_content_count = past_user_content_count.to(args.device)
+    past_user_prob_count = past_user_prob_count.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, category, number,
-            tag, correct, mask,
-            interaction, gather_index)
     # return (test, category, number,
-    #         tag, soltime, time,
-    #         sol_num,
+    #         tag,  correct, mask,
+    #         interaction, gather_index)
+    # return (test, category, number,
+    #         tag, time,
     #         correct, mask,
     #         interaction, gather_index)
+    return (test, category, number,
+            tag, soltime, time, average_prob_correct_cate, past_user_prob_count,
+            correct, mask,
+            interaction, gather_index)
     # return (test, category, number,
-    #         tag, correct, mask,
-    #         interaction, gather_index)
-    # return (test, category, number,
-    #         tag, correct, average_user_correct, mask,
-    #         interaction, gather_index)
-    # return (test, category, number,
-    #         tag, correct, average_prob_correct, mask,
+    #         tag, clipped_soltime, time,
+    #         correct, mask,
     #         interaction, gather_index)
 
 

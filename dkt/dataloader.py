@@ -40,7 +40,8 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train = True):
-        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number']
+        # cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number', 'average_prob_correct_cate', 'past_user_prob_count']
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
@@ -104,23 +105,34 @@ class Preprocess:
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
-        self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
-        self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
-        # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
+        # self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
+        # self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
+        # self.args.n_average_prob_correct_cate = len(np.load(os.path.join(self.args.asset_dir,'average_prob_correct_cate_classes.npy')))
+        # self.args.n_average_user_correct_cate = len(np.load(os.path.join(self.args.asset_dir,'average_user_correct_cate_classes.npy')))
+        # self.args.n_past_user_prob_count = len(np.load(os.path.join(self.args.asset_dir,'past_user_prob_count_classes.npy')))
 
 
         df = df.sort_values(by=['userID','Time'], axis=0)
-        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag']
-        # columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'solTime','Time']
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        # columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag']
+        # columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'Time']
+        # columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'solTime', 'Time', 'average_prob_correct_cate', 'past_user_prob_count']
+        # columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 'clipped_solTime', 'Time']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
-                    # r['assessmentItemID'].values,
-                    r['Category'].values,
-                    r['Number'].values,
+                    r['assessmentItemID'].values,
+                    # r['Category'].values,
+                    # r['Number'].values,
                     r['KnowledgeTag'].values,
                     # r['solTime'].values,
+                    # r['clipped_solTime'].values,
                     # r['Time'].values,
+                    # r['average_prob_correct'].values,
+                    # r['average_user_correct'].values,
+                    # r['average_prob_correct_cate'].values,
+                    # r['average_user_correct_cate'].values,
+                    # r['past_user_prob_count'].values,
                     # r['sol_num'].values,
                     r['answerCode'].values
                 )
@@ -146,14 +158,18 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        # test, question, tag, soltime, time, correct = row[0], row[1], row[2], row[3], row[4], row[5]
-        test, category, number, tag, correct = row[0], row[1], row[2], row[3], row[4]
-        # test, category, number, tag, soltime, time, sol_num, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
+        test, question, tag, correct = row[0], row[1], row[2], row[3]
+        # test, category, number, tag, correct = row[0], row[1], row[2], row[3], row[4]
+        # test, category, number, tag, time, correct = row[0], row[1], row[2], row[3], row[4], row[5]
+        # test, category, number, tag, soltime, time, average_prob_correct_cate, past_user_prob_count, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]
+        # test, category, number, tag, clipped_soltime, time, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
 
-        # cate_cols = [test, question, tag, soltime, time, correct]
-        cate_cols = [test, category, number, tag, correct]
-        # cate_cols = [test, category, number, tag, soltime, time, sol_num, correct]
-
+        cate_cols = [test, question, tag, correct]
+        # cate_cols = [test, category, number, tag,  correct]
+        # cate_cols = [test, category, number, tag, time, correct]
+        # cate_cols = [test, category, number, tag, soltime, time, average_prob_correct_cate, past_user_prob_count, correct]
+        # cate_cols = [test, category, number, tag, clipped_soltime, time, correct]
+# 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
         if seq_len > self.args.max_seq_len:
             for i, col in enumerate(cate_cols):
