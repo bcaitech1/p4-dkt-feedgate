@@ -23,6 +23,7 @@ class YamlConfigManager:
     def reload(self):
         self.clear()
         if self.config_file_path:
+            self.config_file_path = '/opt/ml/code/config_dir/config.yml'
             with open(self.config_file_path, 'r') as f:
                 self.values.update(yaml.safe_load(f)[self.config_name])
 
@@ -45,7 +46,7 @@ class YamlConfigManager:
         if save_file_path:
             with open(save_file_path, 'w') as f:
                 yaml.dump(dict(self.values), f)
-
+    
 def main(args):
      
     setSeeds(42)
@@ -57,7 +58,7 @@ def main(args):
     wandb.login()
 
     preprocess = Preprocess(args)
-    preprocess.load_train_data(args.file_name)
+    preprocess.load_train_data_csv(args.file_name)
     train_data = preprocess.get_train_data()
     
     train_data, valid_data = preprocess.split_data(train_data)
@@ -65,6 +66,12 @@ def main(args):
     wandb.init(project='dkt', config=vars(args), name=args.name)
     trainer.run(args, train_data, valid_data)
     
+def exec_fake_main():
+    args = parse_args(mode='train')
+    cfg = YamlConfigManager(args.config_path, args.config)
+    config.set_args(args,cfg)
+    os.makedirs(args.model_dir, exist_ok=True)
+    main(args)  
 
 if __name__ == "__main__":
     args = parse_args(mode='train')

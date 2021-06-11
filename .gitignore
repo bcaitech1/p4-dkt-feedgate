@@ -5,6 +5,9 @@ wandb
 output
 asset
 models
+airflow_serving/data.csv
+airflow_serving/data.db
+
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/

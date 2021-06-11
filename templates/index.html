@@ -65,6 +65,7 @@
         <div class="container">
             <div class="row" style="padding:20px;">
                 <h1>BOOST QUIZ</h1>
+                <h3>문제 풀이 수 : <span id="num_of_events">집계중...</span></h3>
             </div>
             <p style="font-size:20px;">
                 비밀스러운 퀴즈입니다. 그림과 제시된 지문에 맞는 답을 Yes/No로 선택해주세요!<br>
@@ -222,7 +223,15 @@
                     }
                 }, stepTime);
             }
-
+            setInterval(function(){
+                fetch('/get_num_of_events').then(function(response) {
+                    return response.json();
+                })
+                .then(function(myJson) {
+                    var num_of_events =  JSON.stringify(myJson).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    document.querySelector("#num_of_events").innerHTML = num_of_events;
+                });
+            }, 2000)
         
         </script>
     </body>

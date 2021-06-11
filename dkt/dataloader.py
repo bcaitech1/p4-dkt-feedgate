@@ -53,7 +53,7 @@ class Preprocess:
                 # for unknown class
                 a = df[col].unique().tolist() + ['unknown']
                 le.fit(a)
-                self.__save__labels(le,col)
+                self.__save_labels(le,col)
             else:
                 label_path = os.path.join(self.args.asset_dir,col+'_classes.npy')
                 le.classes_ = np.load(label_path)
