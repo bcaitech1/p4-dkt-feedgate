@@ -4,6 +4,8 @@
 wandb
 output
 lgbm_output
+mlruns
+references
 asset
 models
 ### JupyterNotebooks ###
