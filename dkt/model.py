@@ -31,6 +31,7 @@ class LSTM(nn.Module):
 
         self.hidden_dim = self.args.hidden_dim
         self.n_layers = self.args.n_layers
+        self.drop_out = self.args.drop_out
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
@@ -60,7 +61,8 @@ class LSTM(nn.Module):
                             self.hidden_dim,
                             self.n_layers,
                             batch_first=True,
-                            bidirectional =True)
+                            bidirectional =True,
+                            dropout = self.drop_out)
         
         # Fully connected layer
         self.fc = nn.Linear(self.hidden_dim*2, 1)
@@ -183,7 +185,8 @@ class LSTMATTN(nn.Module):
                             self.hidden_dim,
                             self.n_layers,
                             batch_first=True,
-                            bidirectional =True)
+                            bidirectional =True,
+                            dropout = self.drop_out)
         
         self.config = BertConfig( 
             3, # not used
@@ -413,8 +416,8 @@ class Saint(nn.Module):
         self.device = args.device
 
         self.hidden_dim = self.args.hidden_dim
-        # self.dropout = self.args.dropout
-        self.dropout = 0.
+        self.dropout = self.args.dropout
+        #self.dropout = 0.
         
         ### Embedding 
         # ENCODER embedding
@@ -544,6 +547,7 @@ class LastQuery(nn.Module):
         self.device = args.device
 
         self.hidden_dim = self.args.hidden_dim
+        self.drop_out = self.args.drop_out
         
        # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
@@ -587,7 +591,8 @@ class LastQuery(nn.Module):
             self.hidden_dim,
             self.hidden_dim,
             self.args.n_layers,
-            batch_first=True)
+            batch_first=True,
+            dropout=self.drop_out)
 
         # Fully connected layer
         self.fc = nn.Linear(self.hidden_dim, 1)
@@ -741,8 +746,8 @@ class Saint(nn.Module):
         self.device = args.device
 
         self.hidden_dim = self.args.hidden_dim
-        # self.dropout = self.args.dropout
-        self.dropout = 0.
+        self.dropout = self.args.drop_out
+        #self.dropout = 0.
         
         ### Embedding 
         # ENCODER embedding
