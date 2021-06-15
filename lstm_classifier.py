@@ -77,7 +77,3 @@ class LstmClassifier(BentoService):
 
         return result
         # return self.artifacts.model.inference(data)
-
-# 민원 청구 : 
-# 민원 창구 여자 이름 : 
-# 자진신고 : 최대 감면 - 
