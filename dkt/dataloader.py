@@ -40,7 +40,7 @@ class Preprocess:
         np.save(le_path, encoder.classes_)
 
     def __preprocessing(self, df, is_train = True):
-        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'Category', 'Number']
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'category', 'number']
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
@@ -63,29 +63,10 @@ class Preprocess:
             test = le.transform(df[col])
             df[col] = test
             
-
-        # def convert_time(s):
-        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-        #     return int(timestamp)
-
-        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
         
         return df
 
     def __feature_engineering(self, df):
-        #TODO
-        # category = df['assessmentItemID'].apply(lambda x: x[2])
-        # number = df['assessmentItemID'].apply(lambda x: x[0]+x[-6:])
-
-        # df['Category'] = category
-        # df['Number'] = number
-    
-        # def convert_time(s):
-        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-        #     return int(timestamp)
-
-        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
-        # df = df.sort_values(by=['userID','Timestamp'], axis=0)
 
 
         return df
@@ -97,35 +78,27 @@ class Preprocess:
         df = self.__preprocessing(df, is_train)
 
         # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
-
-                
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
-        self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'Category_classes.npy')))
-        self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'Number_classes.npy')))
-        # self.args.n_ItemID_mean = len(np.load(os.path.join(self.args.asset_dir,'ItemID_mean_classes.npy')))
-        # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
+        self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'category_classes.npy')))
+        self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'number_classes.npy')))
 
 
-        df = df.sort_values(by=['userID','Time'], axis=0)
-        columns = ['userID', 'assessmentItemID','Category', 'Number', 'testId', 'answerCode', 'KnowledgeTag', 
-                    'solTime','Time', 'user_acc', 'ItemID_mean','test_mean','tag_mean', 'sol_num','cum_ans']
+        df = df.sort_values(by=['userID','Timestamp'], axis=0)
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'Timestamp','KnowledgeTag', 
+                    'user_ans', 'user_cnt', 'elapsed_time', 'category','cate_ans', 'cate_cnt', 'number', 'test_ans', 'test_cnt', 'test_cumsum',
+                    'tag_ans', 'tag_cnt','tag_mean']
         group = df[columns].groupby('userID').apply(
                 lambda r: (
                     r['testId'].values, 
+                    r['Timestamp'].values,
                     r['assessmentItemID'].values,
-                    # r['Category'].values,
-                    # r['Number'].values,
                     r['KnowledgeTag'].values,
-                    # r['solTime'].values,
-                    # r['Time'].values,
-                    # r['user_acc'].values,
-                    # r['ItemID_mean'].values,
-                    # r['test_mean'].values,
-                    # r['tag_mean'].values,
-                    r['solTime'].values,
-                    r['sol_num'].values,
+                    r['elapsed_time'].values,
+                    r['test_ans'].values,
+                    r['user_ans'].values,
+                    r['user_cnt'].values,
                     r['answerCode'].values
                 )
             )
@@ -150,11 +123,9 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
-        test, question, tag, soltime, time,  correct = row[0], row[1], row[2], row[3], row[4], row[5]
-        # test, category, number, tag, soltime, time, user_acc, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
+        test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]
 
-        # cate_cols = [test, question, tag, soltime, time, correct]
-        cate_cols = [test, question, tag, soltime, time, correct]
+        cate_cols = [test, time, question, tag, elapsed_time, test_ans,  user_ans, user_cnt, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
 
@@ -165,6 +136,10 @@ class DKTDataset(torch.utils.data.Dataset):
         else:
             mask = np.zeros(self.args.max_seq_len, dtype=np.int16)
             mask[-seq_len:] = 1
+        
+        # reg_time
+        for i in range(len(cate_cols[1])):
+            cate_cols[1][i] = cate_cols[1][len(cate_cols[1])-1] - cate_cols[1][i]
 
         # mask도 columns 목록에 포함시킴
         cate_cols.append(mask)
@@ -173,7 +148,7 @@ class DKTDataset(torch.utils.data.Dataset):
         # np.array -> torch.tensor 형변환
         for i, col in enumerate(cate_cols):
             cate_cols[i] = torch.tensor(col)
-        
+
 
         return cate_cols
 
@@ -188,7 +163,7 @@ def collate(batch):
     col_list = [[] for _ in range(col_n)]
     max_seq_len = len(batch[0][-1])
 
-        
+
     # batch의 값들을 각 column끼리 그룹화
     for row in batch:
         for i, col in enumerate(row):
