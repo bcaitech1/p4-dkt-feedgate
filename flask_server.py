@@ -12,7 +12,7 @@ from flask import request
 import flask_inference
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from config_dir import config
+from config import config
 from args import parse_args
 from train import YamlConfigManager
 import pandas as pd 

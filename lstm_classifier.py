@@ -15,7 +15,7 @@ from bentoml.service.artifacts.pickle import PickleArtifact
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from args import parse_args
-from config_dir import config
+from config import config
 from dkt.dataloader import Preprocess
 
 

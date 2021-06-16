@@ -8,7 +8,7 @@ from dkt.utils import setSeeds
 from easydict import EasyDict
 import wandb
 from prettyprinter import cpprint
-from config_dir import config
+from config import config
 
 # Set Config
 class YamlConfigManager:
@@ -23,7 +23,7 @@ class YamlConfigManager:
     def reload(self):
         self.clear()
         if self.config_file_path:
-            self.config_file_path = '/opt/ml/code/config_dir/config.yml'
+            self.config_file_path = '/opt/ml/code/config/config.yml'
             with open(self.config_file_path, 'r') as f:
                 self.values.update(yaml.safe_load(f)[self.config_name])
 
