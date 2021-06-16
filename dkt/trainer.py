@@ -12,6 +12,9 @@ from .model import *
 
 import wandb
 
+from collections import OrderedDict
+import json
+
 def run(args, train_data, valid_data):
     train_loader, valid_loader = get_loaders(args, train_data, valid_data)
     
@@ -61,7 +64,6 @@ def run(args, train_data, valid_data):
         else:
             scheduler.step()
 
-
 def train(train_loader, model, optimizer, args):
     model.train()
 
@@ -104,7 +106,6 @@ def train(train_loader, model, optimizer, args):
     print(f'TRAIN AUC : {auc} ACC : {acc}')
     return auc, acc, loss_avg
     
-
 def validate(valid_loader, model, args):
     model.eval()
 
@@ -142,14 +143,11 @@ def validate(valid_loader, model, args):
 
     return auc, acc, total_preds, total_targets
 
-
-
 def inference(args, test_data):
     
     model = load_model(args)
     model.eval()
     _, test_loader = get_loaders(args, None, test_data)
-    
     
     total_preds = []
     total_targets = []
@@ -158,7 +156,6 @@ def inference(args, test_data):
         input = process_batch(batch, args)
 
         preds = model(input)
-
         # predictions
         preds = preds[:,-1]
 
@@ -177,7 +174,6 @@ def inference(args, test_data):
         w.write("id,prediction\n")
         for id, p in enumerate(total_preds):
             w.write('{},{}\n'.format(id,p))
-
 
 
 
@@ -267,6 +263,7 @@ def compute_loss(preds, targets):
     Args :
         preds   : (batch_size, max_seq_len)
         targets : (batch_size, max_seq_len)
+
     """
     loss = get_criterion(preds, targets)
     #마지막 시퀀드에 대한 값만 loss 계산
@@ -289,9 +286,7 @@ def save_checkpoint(state, model_dir, model_filename):
     torch.save(state, os.path.join(model_dir, model_filename))
 
 
-
 def load_model(args):
-    
     
     model_path = os.path.join(args.model_dir, args.model_name)
     print("Loading Model from:", model_path)

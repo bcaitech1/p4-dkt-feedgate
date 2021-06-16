@@ -8,6 +8,9 @@ mlruns
 references
 asset
 models
+airflow_serving/data.csv
+airflow_serving/data.db
+airflow_serving/event_data.csv
 logs.log
 
 ### JupyterNotebooks ###

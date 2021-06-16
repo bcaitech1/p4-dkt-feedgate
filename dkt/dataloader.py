@@ -7,13 +7,13 @@ import random
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import torch
+from torch.nn.utils.rnn import pad_sequence
 
 class Preprocess:
     def __init__(self,args):
         self.args = args
         self.train_data = None
         self.test_data = None
-        
 
     def get_train_data(self):
         return self.train_data
@@ -39,37 +39,84 @@ class Preprocess:
         le_path = os.path.join(self.args.asset_dir, name + '_classes.npy')
         np.save(le_path, encoder.classes_)
 
+<<<<<<< HEAD
+    def __preprocessing(self, df, is_train=False):
+        cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag']
+=======
     def __preprocessing(self, df, is_train = True):
         cate_cols = ['assessmentItemID', 'testId', 'KnowledgeTag', 'category', 'number']
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
 
         if not os.path.exists(self.args.asset_dir):
             os.makedirs(self.args.asset_dir)
             
         for col in cate_cols:
+<<<<<<< HEAD
+            
+=======
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
             le = LabelEncoder()
+            
             if is_train:
-                #For UNKNOWN class
+                # for unknown class
                 a = df[col].unique().tolist() + ['unknown']
                 le.fit(a)
-                self.__save_labels(le, col)
+                self.__save_labels(le,col)
             else:
                 label_path = os.path.join(self.args.asset_dir,col+'_classes.npy')
                 le.classes_ = np.load(label_path)
-                
-                df[col] = df[col].apply(lambda x: x if x in le.classes_ else 'unknown')
+                df[col] = df[col].apply(lambda x: x if str(x) in le.classes_ else 'unknown')
 
             #모든 컬럼이 범주형이라고 가정
             df[col]= df[col].astype(str)
             test = le.transform(df[col])
             df[col] = test
+<<<<<<< HEAD
+
+        def convert_time(s):
+            timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
+            return int(timestamp)
+
+        df['Timestamp'] = df['Timestamp'].apply(convert_time)
+        print('Preprocess Done....')
+        return df
+
+    def __feature_engineering(self, df):
+        #TODO
+        return df
+=======
             
         
         return df
 
     def __feature_engineering(self, df):
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
 
+    def load_data(self, df):
+        """
+            (Input)
+                - df : dataframe of user data. 
+            (Caution)
+                - If you want to load csv (not dataframe), use `load_data_from_file()`. 
+        """
+        df = self.__feature_engineering(df)
+        df = self.__preprocessing(df)
+        
+        self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
+        self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
+        self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
+        
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        group = df[columns].groupby('userID').apply(
+                lambda r: (
+                    r['testId'].values, 
+                    r['assessmentItemID'].values,
+                    r['KnowledgeTag'].values,
+                    r['answerCode'].values
+                )
+            )
 
-        return df
+        return group.values
 
     def load_data_from_file(self, file_name, is_train=True):
         csv_file_path = os.path.join(self.args.data_dir, file_name)
@@ -77,6 +124,20 @@ class Preprocess:
         df = self.__feature_engineering(df)
         df = self.__preprocessing(df, is_train)
 
+<<<<<<< HEAD
+        self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
+        self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
+        self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
+
+
+        df = df.sort_values(by=['userID','Timestamp'], axis=0)
+        columns = ['userID', 'assessmentItemID', 'testId', 'answerCode', 'KnowledgeTag']
+        group = df[columns].groupby('userID').apply(
+                lambda r: (
+                    r['testId'].values, 
+                    r['assessmentItemID'].values,
+                    r['KnowledgeTag'].values,
+=======
         # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
@@ -99,19 +160,22 @@ class Preprocess:
                     r['test_ans'].values,
                     r['user_ans'].values,
                     r['user_cnt'].values,
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
                     r['answerCode'].values
                 )
             )
 
         return group.values
 
-    def load_train_data(self, file_name):
+    def load_test_data(self, data):
+        self.test_data = self.load_data(data)
+
+    def load_train_data_csv(self, file_name):
         self.train_data = self.load_data_from_file(file_name)
 
-    def load_test_data(self, file_name):
-        self.test_data = self.load_data_from_file(file_name, is_train= False)
-
-
+    def load_test_data_csv(self, file_name):
+        self.train_data = self.load_data_from_file(file_name, is_train=False)
+        
 class DKTDataset(torch.utils.data.Dataset):
     def __init__(self, data, args):
         self.data = data
@@ -123,9 +187,16 @@ class DKTDataset(torch.utils.data.Dataset):
         # 각 data의 sequence length
         seq_len = len(row[0])
 
+<<<<<<< HEAD
+        test, question, tag, correct = row[0], row[1], row[2], row[3]
+        
+
+        cate_cols = [test, question, tag, correct]
+=======
         test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]
 
         cate_cols = [test, time, question, tag, elapsed_time, test_ans,  user_ans, user_cnt, correct]
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
 
@@ -156,14 +227,17 @@ class DKTDataset(torch.utils.data.Dataset):
         return len(self.data)
 
 
-from torch.nn.utils.rnn import pad_sequence
 
 def collate(batch):
     col_n = len(batch[0])
     col_list = [[] for _ in range(col_n)]
     max_seq_len = len(batch[0][-1])
+<<<<<<< HEAD
+        
+=======
 
 
+>>>>>>> 984057abd5c6e19299ffa8869d023aa341e19f04
     # batch의 값들을 각 column끼리 그룹화
     for row in batch:
         for i, col in enumerate(row):

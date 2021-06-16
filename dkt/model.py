@@ -91,8 +91,7 @@ class LSTM(nn.Module):
         user_cnt = torch.unsqueeze(user_cnt,2)
 
         # Embedding
-
-        embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
+        embed_interaction = self.embedding_interaction(interaction)
         embed_test = self.embedding_test(test)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
