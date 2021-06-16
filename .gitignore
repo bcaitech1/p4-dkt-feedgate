@@ -8,6 +8,8 @@ mlruns
 references
 asset
 models
+logs.log
+
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/
