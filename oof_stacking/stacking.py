@@ -37,3 +37,24 @@ for i, train_oof in enumerate(val_list):
 #학습 시작.
 meta_model.fit(S_train, GT)
 
+##########추론
+
+S_test = None       #학습에 쓸 데이터 [X]
+for i, test in enumerate(test_list):
+    test = test.reshape(-1, 1)
+#     print(test)
+    if not isinstance(S_test, np.ndarray):
+        S_test = test
+    else:
+        S_test = np.concatenate([S_test, test], axis=1)       
+
+predict = meta_model.predict(S_test)
+
+df = pd.DataFrame(predict)
+
+write_path ="output.csv"
+with open(write_path, 'w', encoding='utf8') as w:
+    print("writing prediction : {}".format(write_path))
+    w.write("id,prediction\n")
+    for id, p in enumerate(predict):
+        w.write('{},{}\n'.format(id,p))
