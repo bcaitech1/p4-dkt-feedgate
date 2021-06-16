@@ -9,3 +9,7 @@ prettyprinter
 importlib 
 pyyaml
 adamp
+matplotlib
+seaborn
+missingno
+tqdm

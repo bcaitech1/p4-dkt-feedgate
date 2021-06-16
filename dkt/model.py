@@ -10,7 +10,8 @@ import types
 try:
     from transformers.modeling_bert import BertConfig, BertEncoder, BertModel    
 except:
-    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel    
+    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel
+
 
 
 def str_to_class(field):
@@ -35,27 +36,21 @@ class LSTM(nn.Module):
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//6)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//6)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//6)
-        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//7)
-        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//7)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//6)
-        # self.embedding_ItemID_mean = nn.Embedding(self.args.n_ItemID_mean + 1, self.hidden_dim//8)
-        # self.embedding_soltime = nn.Embedding(self.args.n_cate_time + 1, self.hidden_dim//3)
+        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//9)
+        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//9)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//9)
+        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//9)
 
         #Linear
-        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//6), nn.LayerNorm(self.hidden_dim//6))
-        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//6), nn.LayerNorm(self.hidden_dim//6))
-        
-        # self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        # self.linear_ItemID_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
+        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_elapsed_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_user_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_user_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//6)*6, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//9)*9, self.hidden_dim)
 
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -86,51 +81,41 @@ class LSTM(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, soltime, time, _, mask, interaction, _ = input
+        test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
-        soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
+        elapsed_time = torch.unsqueeze(elapsed_time,2) ## [64,20] -> [64,20,1]
         time = torch.unsqueeze(time,2)
-        # user_acc = torch.unsqueeze(user_acc,2)
-        # ItemID_mean = torch.unsqueeze(ItemID_mean,2)
-        # test_mean = torch.unsqueeze(test_mean,2)
-        # tag_mean = torch.unsqueeze(tag_mean,2)
-        # sol_num = torch.unsqueeze(sol_num,2)
+        test_ans = torch.unsqueeze(test_ans,2)
+        user_ans = torch.unsqueeze(user_ans,2)
+        user_cnt = torch.unsqueeze(user_cnt,2)
 
         # Embedding
 
         embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
-        # embed_category = self.embedding_category(category)
-        # embed_number = self.embedding_number(number)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
-        # embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
 
         #Linear
 
-        linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
-        # embed_soltime = self.embedding_soltime(soltime)
+        linear_elapsed_time = self.linear_elapsed_time(elapsed_time.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
         linear_time = self.linear_time(time.float())
-        # linear_user_acc = self.linear_user_acc(user_acc.float())
-        # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
-        # linear_test_mean = self.linear_test_mean(test_mean.float())
-        # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
+        linear_test_ans = self.linear_test_ans(test_ans.float())
+        # linear_test_cnt = self.linear_test_cnt(test_cnt.float())
+        linear_user_ans = self.linear_user_ans(user_ans.float())
+        linear_user_cnt = self.linear_user_cnt(user_cnt.float())
 
         embed = torch.cat([embed_interaction,
                            embed_test,
+                           linear_time,
                            embed_question,
-                        #    embed_category,
-                        #    embed_number,
                            embed_tag,
-                        #    
-                        #    linear_time,
-                        #    linear_user_acc,
-                        #    linear_ItemID_mean,
-                        #    linear_test_mean,
-                        #    linear_tag_mean,
-                           linear_soltime,
-                           linear_time,], 2)
+                           linear_elapsed_time,
+                           linear_test_ans,
+                           linear_user_ans,
+                           linear_user_cnt,
+                           ], 2)
 
         X = self.comb_proj(embed)
 
@@ -160,26 +145,24 @@ class LSTMATTN(nn.Module):
 
         # Embedding 
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//8)
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//8)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//8)
-        # self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//7)
-        # self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//7)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//8)
-        self.embedding_ItemID_mean = nn.Embedding(self.args.n_ItemID_mean + 1, self.hidden_dim//8)
-        # self.embedding_soltime = nn.Embedding(self.args.n_cate_time + 1, self.hidden_dim//3)
+        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//9)
+        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//9)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//9)
+        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//9)
 
         #Linear
-        self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
+        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_elapsed_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+
+        self.linear_user_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_user_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_cate_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
         
-        self.linear_user_acc = nn.Sequential(nn.Linear(1, self.hidden_dim//8), nn.LayerNorm(self.hidden_dim//8))
-        # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_tag_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_sol_num = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
-        self.comb_proj = nn.Linear((self.hidden_dim//8)*8, self.hidden_dim)
+        self.comb_proj = nn.Linear((self.hidden_dim//9)*9, self.hidden_dim)
         
         self.lstm = nn.LSTM(self.hidden_dim,
                             self.hidden_dim,
@@ -221,49 +204,41 @@ class LSTMATTN(nn.Module):
 
     def forward(self, input):
 
-        test, question, tag, user_acc, ItemID_mean, soltime, time, _, mask, interaction, _ = input
+        test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
-        soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
+        elapsed_time = torch.unsqueeze(elapsed_time,2) ## [64,20] -> [64,20,1]
         time = torch.unsqueeze(time,2)
-        user_acc = torch.unsqueeze(user_acc,2)
-        # test_mean = torch.unsqueeze(test_mean,2)
-        # tag_mean = torch.unsqueeze(tag_mean,2)
-        # sol_num = torch.unsqueeze(sol_num,2)
+        test_ans = torch.unsqueeze(test_ans,2)
+        # tag_ans = torch.unsqueeze(tag_ans,2)
+        user_ans = torch.unsqueeze(user_ans,2)
+        user_cnt = torch.unsqueeze(user_cnt,2)
 
         # Embedding
 
         embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
-        # embed_category = self.embedding_category(category)
-        # embed_number = self.embedding_number(number)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
-        embedding_ItemID_mean = self.embedding_ItemID_mean(ItemID_mean)
 
         #Linear
-        
-        linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
-        # embed_soltime = self.embedding_soltime(soltime)
+
+        linear_elapsed_time = self.linear_elapsed_time(elapsed_time.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
         linear_time = self.linear_time(time.float())
-        linear_user_acc = self.linear_user_acc(user_acc.float())
-        # linear_test_mean = self.linear_test_mean(test_mean.float())
-        # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
+        linear_test_ans = self.linear_test_ans(test_ans.float())
+        linear_user_ans = self.linear_user_ans(user_ans.float())
+        linear_user_cnt = self.linear_user_cnt(user_cnt.float())
 
         embed = torch.cat([embed_interaction,
                            embed_test,
+                           linear_time,
                            embed_question,
-                        #    embed_category,
-                        #    embed_number,
                            embed_tag,
-                        #    
-                        #    linear_time,
-                           linear_user_acc,
-                           embedding_ItemID_mean,
-                        #    linear_test_mean,
-                        #    linear_tag_mean,
-                           linear_soltime,
-                           linear_time,], 2)
+                           linear_elapsed_time,
+                           linear_test_ans,
+                           linear_user_ans,
+                           linear_user_cnt,
+                           ], 2)
 
         X = self.comb_proj(embed)
 
@@ -301,19 +276,12 @@ class Bert(nn.Module):
         # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
         self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
         self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
-        # self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
         self.embedding_category = nn.Embedding(self.args.n_category + 1, self.hidden_dim//3)
         self.embedding_number = nn.Embedding(self.args.n_number + 1, self.hidden_dim//3)
         self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
 
         # Linear
-        # self.linear_soltime = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-
-
         self.linear_feature = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_ItemID_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
-        # self.linear_test_mean = nn.Sequential(nn.Linear(1, self.hidden_dim//3), nn.LayerNorm(self.hidden_dim//3))
 
         # embedding combination projection
         self.comb_proj = nn.Linear((self.hidden_dim//3)*10, self.hidden_dim)
@@ -419,21 +387,30 @@ class Saint(nn.Module):
         self.dropout = self.args.dropout
         #self.dropout = 0.
         
-        ### Embedding 
-        # ENCODER embedding
-        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//3)
-        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//3)
-        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//3)
-        
-        # encoder combination projection
-        self.enc_comb_proj = nn.Linear((self.hidden_dim//3)*3, self.hidden_dim)
+        # Embedding 
+        self.embedding_test = nn.Embedding(self.args.n_test + 1, self.hidden_dim//9)
+        self.embedding_question = nn.Embedding(self.args.n_questions + 1, self.hidden_dim//9)
+        self.embedding_tag = nn.Embedding(self.args.n_tag + 1, self.hidden_dim//9)
+
+        #Linear
+        self.linear_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_elapsed_time = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_test_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+
+        self.linear_user_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_user_cnt = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+        self.linear_cate_ans = nn.Sequential(nn.Linear(1, self.hidden_dim//9), nn.LayerNorm(self.hidden_dim//9))
+
+        #encoder combination projection
+        self.enc_comb_proj = nn.Linear((self.hidden_dim//9)*8, self.hidden_dim)
 
         # DECODER embedding
-        # interaction은 현재 correct으로 구성되어있다. correct(1, 2) + padding(0)
-        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//3)
+        # interaction은 현재 correct로 구성되어있다. correct(1, 2) + padding(0)
+        self.embedding_interaction = nn.Embedding(3, self.hidden_dim//9)
         
         # decoder combination projection
-        self.dec_comb_proj = nn.Linear((self.hidden_dim//3)*4, self.hidden_dim)
+        self.dec_comb_proj = nn.Linear((self.hidden_dim//9)*9, self.hidden_dim)
 
         # Positional encoding
         self.pos_encoder = PositionalEncoding(self.hidden_dim, self.dropout, self.args.max_seq_len)
@@ -462,34 +439,76 @@ class Saint(nn.Module):
         return mask.masked_fill(mask==1, float('-inf'))
 
     def forward(self, input):
-        test, question, tag, _, mask, interaction, _ = input
+        test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, _, mask, interaction, _ = input
 
         batch_size = interaction.size(0)
         seq_len = interaction.size(1)
 
-        # 신나는 embedding
-        # ENCODER
-        embed_test = self.embedding_test(test)
+        elapsed_time = torch.unsqueeze(elapsed_time,2) ## [64,20] -> [64,20,1]
+        time = torch.unsqueeze(time,2)
+        test_ans = torch.unsqueeze(test_ans,2)
+        user_ans = torch.unsqueeze(user_ans,2)
+        user_cnt = torch.unsqueeze(user_cnt,2)
+
+        # Embedding
+        embed_test = self.embedding_test(test)  ## [64,20] -> [64,20,21]
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
+
+        #Linear
+
+        linear_elapsed_time = self.linear_elapsed_time(elapsed_time.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
+        linear_time = self.linear_time(time.float())
+        linear_test_ans = self.linear_test_ans(test_ans.float())
+        linear_user_ans = self.linear_user_ans(user_ans.float())
+        linear_user_cnt = self.linear_user_cnt(user_cnt.float())
 
         embed_enc = torch.cat([embed_test,
-                               embed_question,
-                               embed_tag,], 2)
+                            linear_time,
+                            embed_question,
+                        #    embed_category,
+                        #    embed_number,
+                            embed_tag,
+                        #    
+                            linear_elapsed_time,
+                            linear_test_ans,
+                        #    linear_test_cnt,
+                            linear_user_ans,
+                            linear_user_cnt,
+                           ], 2)
 
         embed_enc = self.enc_comb_proj(embed_enc)
-        
-        # DECODER     
+
+        # Decoder    
+        # Embedding
+        embed_interaction = self.embedding_interaction(interaction) ## [64,20] -> [64,20,21]
         embed_test = self.embedding_test(test)
         embed_question = self.embedding_question(question)
         embed_tag = self.embedding_tag(tag)
 
-        embed_interaction = self.embedding_interaction(interaction)
+        #Linear
 
-        embed_dec = torch.cat([embed_test,
-                               embed_question,
-                               embed_tag,
-                               embed_interaction], 2)
+        linear_elapsed_time = self.linear_elapsed_time(elapsed_time.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
+        linear_time = self.linear_time(time.float())
+        linear_test_ans = self.linear_test_ans(test_ans.float())
+        linear_user_ans = self.linear_user_ans(user_ans.float())
+        linear_user_cnt = self.linear_user_cnt(user_cnt.float())
+
+
+        embed_dec = torch.cat([embed_interaction,
+                           embed_test,
+                           linear_time,
+                           embed_question,
+                        #    embed_category,
+                        #    embed_number,
+                           embed_tag,
+                        #    
+                           linear_elapsed_time,
+                           linear_test_ans,
+                        #    linear_test_cnt,
+                           linear_user_ans,
+                           linear_user_cnt,
+                           ], 2)
 
         embed_dec = self.dec_comb_proj(embed_dec)
 
@@ -639,11 +658,6 @@ class LastQuery(nn.Module):
         batch_size = interaction.size(0)
         soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
         time = torch.unsqueeze(time,2)
-        # user_acc = torch.unsqueeze(user_acc,2)
-        # ItemID_mean = torch.unsqueeze(ItemID_mean,2)
-        # test_mean = torch.unsqueeze(test_mean,2)
-        # tag_mean = torch.unsqueeze(tag_mean,2)
-        # sol_num = torch.unsqueeze(sol_num,2)
 
         # Embedding
 
@@ -656,11 +670,6 @@ class LastQuery(nn.Module):
         linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
         # embed_soltime = self.embedding_soltime(soltime)
         linear_time = self.linear_time(time.float())
-        # linear_user_acc = self.linear_user_acc(user_acc.float())
-        # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
-        # linear_test_mean = self.linear_test_mean(test_mean.float())
-        # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
-
         embed = torch.cat([embed_interaction,
                            embed_test,
                            embed_category,
