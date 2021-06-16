@@ -70,7 +70,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[5] # correct
+        targets = input[8] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -113,7 +113,8 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[5] # correct
+        targets = input[8] # correct
+        
 
 
         # predictions
@@ -150,16 +151,15 @@ def inference(args, test_data):
     
     
     total_preds = []
+    total_targets = []
     
     for step, batch in enumerate(test_loader):
         input = process_batch(batch, args)
 
         preds = model(input)
-        
 
         # predictions
         preds = preds[:,-1]
-        
 
         if args.device == 'cuda':
             preds = preds.to('cpu').detach().numpy()
@@ -194,7 +194,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, question, tag, soltime,  time, correct, mask = batch
+    test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, correct, mask = batch
     
     
     # change to float
@@ -212,16 +212,17 @@ def process_batch(batch, args):
     # exit()
     #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
+    time = ((time + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
     # category = ((category + 1) * mask).to(torch.int64)
     # number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-    time = ((time + 1) * mask).to(torch.int64)
-    # user_acc = ((user_acc + 1) * mask).to(torch.int64)
-    # ItemID_mean = ((ItemID_mean + 1) * mask).to(torch.int64)
-    # test_mean = ((test_mean + 1) * mask).to(torch.int64)
-    # tag_mean = ((tag_mean + 1) * mask).to(torch.int64)
-    soltime = ((soltime + 1) * mask).to(torch.int64)
+    elapsed_time = ((elapsed_time + 1) * mask).to(torch.int64)
+    test_ans = ((test_ans + 1) * mask).to(torch.int64)
+    # tag_ans = ((tag_ans + 1) * mask).to(torch.int64)
+    user_ans = ((user_ans + 1) * mask).to(torch.int64)
+    user_cnt = ((user_cnt + 1) * mask).to(torch.int64)
+    # soltime = ((soltime + 1) * mask).to(torch.int64)
     
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -232,18 +233,17 @@ def process_batch(batch, args):
     # device memory로 이동
 
     test = test.to(args.device)
+    time = time.to(args.device)
     question = question.to(args.device)
     # category = category.to(args.device)
     # number = number.to(args.device)
-
-
     tag = tag.to(args.device)
-    time = time.to(args.device)
-    # user_acc = user_acc.to(args.device)
-    # ItemID_mean = ItemID_mean.to(args.device)
-    # test_mean = test_mean.to(args.device)
-    # tag_mean = tag_mean.to(args.device)
-    soltime = soltime.to(args.device)
+    elapsed_time = elapsed_time.to(args.device)
+    test_ans = test_ans.to(args.device)
+    # tag_ans = tag_ans.to(args.device)
+    user_ans = user_ans.to(args.device)
+    user_cnt = user_cnt.to(args.device)
+    # soltime = soltime.to(args.device)
 
     correct = correct.to(args.device)
     mask = mask.to(args.device)
@@ -251,10 +251,7 @@ def process_batch(batch, args):
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, question, tag,
-            # user_acc, ItemID_mean,
-            # test_mean, tag_mean,
-            soltime, time,
+    return (test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt,
             correct, mask,
             interaction, gather_index)
 
