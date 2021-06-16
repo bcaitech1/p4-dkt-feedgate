@@ -1,4 +1,5 @@
 import os
+from numpy.lib.function_base import diff
 import torch
 import numpy as np
 
@@ -237,6 +238,15 @@ def process_batch(batch, args):
     user_cnt = user_cnt.to(args.device)
 
     correct = correct.to(args.device)
+    # hour = hour.to(args.device)
+    # weekday = weekday.to(args.device)
+    # average_user_correct = average_user_correct.to(args.device)
+    # average_tag_correct = average_tag_correct.to(args.device)
+    # average_prob_correct = average_prob_correct.to(args.device)
+    average_prob_correct_cate = average_prob_correct_cate.to(args.device)
+    # average_user_correct_cate = average_user_correct_cate.to(args.device)
+    # past_prob_count = past_prob_count.to(args.device)
+    past_user_prob_count = past_user_prob_count.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
@@ -245,6 +255,10 @@ def process_batch(batch, args):
     return (test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt,
             correct, mask,
             interaction, gather_index)
+    # return (test, category, number,
+    #         tag, clipped_soltime, time,
+    #         correct, mask,
+    #         interaction, gather_index)
 
 
 # loss계산하고 parameter update!

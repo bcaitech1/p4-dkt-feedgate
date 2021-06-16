@@ -10,7 +10,8 @@ import types
 try:
     from transformers.modeling_bert import BertConfig, BertEncoder, BertModel    
 except:
-    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel    
+    from transformers.models.bert.modeling_bert import BertConfig, BertEncoder, BertModel
+
 
 
 def str_to_class(field):
@@ -651,11 +652,6 @@ class LastQuery(nn.Module):
         batch_size = interaction.size(0)
         soltime = torch.unsqueeze(soltime,2) ## [64,20] -> [64,20,1]
         time = torch.unsqueeze(time,2)
-        # user_acc = torch.unsqueeze(user_acc,2)
-        # ItemID_mean = torch.unsqueeze(ItemID_mean,2)
-        # test_mean = torch.unsqueeze(test_mean,2)
-        # tag_mean = torch.unsqueeze(tag_mean,2)
-        # sol_num = torch.unsqueeze(sol_num,2)
 
         # Embedding
 
@@ -668,11 +664,6 @@ class LastQuery(nn.Module):
         linear_soltime = self.linear_soltime(soltime.float()) ## [64,20,1] -> [64,20,21] -> [64,20,21] (layer normalize)
         # embed_soltime = self.embedding_soltime(soltime)
         linear_time = self.linear_time(time.float())
-        # linear_user_acc = self.linear_user_acc(user_acc.float())
-        # linear_ItemID_mean = self.linear_ItemID_mean(ItemID_mean.float())
-        # linear_test_mean = self.linear_test_mean(test_mean.float())
-        # linear_tag_mean = self.linear_tag_mean(tag_mean.float())
-
         embed = torch.cat([embed_interaction,
                            embed_test,
                            embed_category,
