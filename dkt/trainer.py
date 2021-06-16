@@ -210,19 +210,14 @@ def process_batch(batch, args):
     interaction = (interaction * interaction_mask).to(torch.int64)
     # print(interaction)
     # exit()
-    #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
     time = ((time + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
-    # category = ((category + 1) * mask).to(torch.int64)
-    # number = ((number + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
     elapsed_time = ((elapsed_time + 1) * mask).to(torch.int64)
     test_ans = ((test_ans + 1) * mask).to(torch.int64)
-    # tag_ans = ((tag_ans + 1) * mask).to(torch.int64)
     user_ans = ((user_ans + 1) * mask).to(torch.int64)
     user_cnt = ((user_cnt + 1) * mask).to(torch.int64)
-    # soltime = ((soltime + 1) * mask).to(torch.int64)
     
     # gather index
     # 마지막 sequence만 사용하기 위한 index
@@ -235,15 +230,11 @@ def process_batch(batch, args):
     test = test.to(args.device)
     time = time.to(args.device)
     question = question.to(args.device)
-    # category = category.to(args.device)
-    # number = number.to(args.device)
     tag = tag.to(args.device)
     elapsed_time = elapsed_time.to(args.device)
     test_ans = test_ans.to(args.device)
-    # tag_ans = tag_ans.to(args.device)
     user_ans = user_ans.to(args.device)
     user_cnt = user_cnt.to(args.device)
-    # soltime = soltime.to(args.device)
 
     correct = correct.to(args.device)
     mask = mask.to(args.device)

@@ -63,29 +63,10 @@ class Preprocess:
             test = le.transform(df[col])
             df[col] = test
             
-
-        # def convert_time(s):
-        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-        #     return int(timestamp)
-
-        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
         
         return df
 
     def __feature_engineering(self, df):
-        #TODO
-        # category = df['assessmentItemID'].apply(lambda x: x[2])
-        # number = df['assessmentItemID'].apply(lambda x: x[0]+x[-6:])
-
-        # df['Category'] = category
-        # df['Number'] = number
-    
-        # def convert_time(s):
-        #     timestamp = time.mktime(datetime.strptime(s, '%Y-%m-%d %H:%M:%S').timetuple())
-        #     return int(timestamp)
-
-        # df['Timestamp'] = df['Timestamp'].apply(convert_time)
-        # df = df.sort_values(by=['userID','Timestamp'], axis=0)
 
 
         return df
@@ -97,15 +78,11 @@ class Preprocess:
         df = self.__preprocessing(df, is_train)
 
         # 추후 feature를 embedding할 시에 embedding_layer의 input 크기를 결정할때 사용
-
-                
         self.args.n_questions = len(np.load(os.path.join(self.args.asset_dir,'assessmentItemID_classes.npy')))
         self.args.n_test = len(np.load(os.path.join(self.args.asset_dir,'testId_classes.npy')))
         self.args.n_tag = len(np.load(os.path.join(self.args.asset_dir,'KnowledgeTag_classes.npy')))
         self.args.n_category = len(np.load(os.path.join(self.args.asset_dir,'category_classes.npy')))
         self.args.n_number = len(np.load(os.path.join(self.args.asset_dir,'number_classes.npy')))
-        # self.args.n_ItemID_mean = len(np.load(os.path.join(self.args.asset_dir,'ItemID_mean_classes.npy')))
-        # self.args.n_cate_time = len(np.load(os.path.join(self.args.asset_dir,'category_solTime_classes.npy')))
 
 
         df = df.sort_values(by=['userID','Timestamp'], axis=0)
@@ -116,15 +93,10 @@ class Preprocess:
                 lambda r: (
                     r['testId'].values, 
                     r['Timestamp'].values,
-                    # r['category'].values,
                     r['assessmentItemID'].values,
                     r['KnowledgeTag'].values,
                     r['elapsed_time'].values,
-                    # r['solTime'].values,
-                    # r['Time'].values,
-                    # r['user_acc'].values,
                     r['test_ans'].values,
-                    # r['tag_ans'].values,
                     r['user_ans'].values,
                     r['user_cnt'].values,
                     r['answerCode'].values
@@ -152,9 +124,7 @@ class DKTDataset(torch.utils.data.Dataset):
         seq_len = len(row[0])
 
         test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]
-        # test, category, number, tag, soltime, time, user_acc, correct = row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]
 
-        # cate_cols = [test, question, tag, soltime, time, correct]
         cate_cols = [test, time, question, tag, elapsed_time, test_ans,  user_ans, user_cnt, correct]
 
         # max seq len을 고려하여서 이보다 길면 자르고 아닐 경우 그대로 냅둔다
