@@ -3,11 +3,16 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,windows,linux,python,visualstudio,visualstudiocode,pycharm,jupyternotebooks
 wandb
 output
+lgbm_output
+mlruns
+references
 asset
 models
 airflow_serving/data.csv
 airflow_serving/data.db
 airflow_serving/event_data.csv
+logs.log
+
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/

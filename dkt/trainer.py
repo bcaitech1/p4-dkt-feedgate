@@ -1,4 +1,5 @@
 import os
+from numpy.lib.function_base import diff
 import torch
 import numpy as np
 
@@ -39,7 +40,7 @@ def run(args, train_data, valid_data):
 
         ### TODO: model save or early stopping
         wandb.log({"epoch": epoch, "train_loss": train_loss, "train_auc": train_auc, "train_acc":train_acc,
-                  "valid_auc":auc, "valid_acc":acc})
+                  "valid_auc":auc, "valid_acc":acc,"lr":optimizer.param_groups[0]['lr']})
         if auc > best_auc:
             best_auc = auc
             # torch.nn.DataParallel로 감싸진 경우 원래의 model을 가져옵니다.
@@ -72,7 +73,7 @@ def train(train_loader, model, optimizer, args):
     for step, batch in enumerate(train_loader):
         input = process_batch(batch, args)
         preds = model(input)
-        targets = input[3] # correct
+        targets = input[8] # correct
 
 
         loss = compute_loss(preds, targets)
@@ -114,7 +115,8 @@ def validate(valid_loader, model, args):
         input = process_batch(batch, args)
 
         preds = model(input)
-        targets = input[3] # correct
+        targets = input[8] # correct
+        
 
 
         # predictions
@@ -148,12 +150,12 @@ def inference(args, test_data):
     _, test_loader = get_loaders(args, None, test_data)
     
     total_preds = []
+    total_targets = []
     
     for step, batch in enumerate(test_loader):
         input = process_batch(batch, args)
 
         preds = model(input)
-        
         # predictions
         preds = preds[:,-1]
 
@@ -189,7 +191,7 @@ def get_model(args):
 # 배치 전처리
 def process_batch(batch, args):
 
-    test, question, tag, correct, mask = batch
+    test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt, correct, mask = batch
     
     
     # change to float
@@ -200,15 +202,20 @@ def process_batch(batch, args):
     #    saint의 경우 decoder에 들어가는 input이다
     interaction = correct + 1 # 패딩을 위해 correct값에 1을 더해준다.
     interaction = interaction.roll(shifts=1, dims=1)
-    interaction[:, 0] = 0 # set padding index to the first sequence
-    interaction = (interaction * mask).to(torch.int64)
+    interaction_mask = mask.roll(shifts=1,dims=1)
+    interaction_mask[:, 0] = 0 # set padding index to the first sequence
+    interaction = (interaction * interaction_mask).to(torch.int64)
     # print(interaction)
     # exit()
-    #  test_id, question_id, tag
     test = ((test + 1) * mask).to(torch.int64)
+    time = ((time + 1) * mask).to(torch.int64)
     question = ((question + 1) * mask).to(torch.int64)
     tag = ((tag + 1) * mask).to(torch.int64)
-
+    elapsed_time = ((elapsed_time + 1) * mask).to(torch.int64)
+    test_ans = ((test_ans + 1) * mask).to(torch.int64)
+    user_ans = ((user_ans + 1) * mask).to(torch.int64)
+    user_cnt = ((user_cnt + 1) * mask).to(torch.int64)
+    
     # gather index
     # 마지막 sequence만 사용하기 위한 index
     gather_index = torch.tensor(np.count_nonzero(mask, axis=1))
@@ -218,19 +225,36 @@ def process_batch(batch, args):
     # device memory로 이동
 
     test = test.to(args.device)
+    time = time.to(args.device)
     question = question.to(args.device)
-
-
     tag = tag.to(args.device)
+    elapsed_time = elapsed_time.to(args.device)
+    test_ans = test_ans.to(args.device)
+    user_ans = user_ans.to(args.device)
+    user_cnt = user_cnt.to(args.device)
+
     correct = correct.to(args.device)
+    # hour = hour.to(args.device)
+    # weekday = weekday.to(args.device)
+    # average_user_correct = average_user_correct.to(args.device)
+    # average_tag_correct = average_tag_correct.to(args.device)
+    # average_prob_correct = average_prob_correct.to(args.device)
+    average_prob_correct_cate = average_prob_correct_cate.to(args.device)
+    # average_user_correct_cate = average_user_correct_cate.to(args.device)
+    # past_prob_count = past_prob_count.to(args.device)
+    past_user_prob_count = past_user_prob_count.to(args.device)
     mask = mask.to(args.device)
 
     interaction = interaction.to(args.device)
     gather_index = gather_index.to(args.device)
 
-    return (test, question,
-            tag, correct, mask,
+    return (test, time, question, tag, elapsed_time, test_ans, user_ans, user_cnt,
+            correct, mask,
             interaction, gather_index)
+    # return (test, category, number,
+    #         tag, clipped_soltime, time,
+    #         correct, mask,
+    #         interaction, gather_index)
 
 
 # loss계산하고 parameter update!
